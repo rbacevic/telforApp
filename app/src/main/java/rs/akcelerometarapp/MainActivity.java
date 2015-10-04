@@ -187,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
 
 	};*/
 	public Subscription defineSensorListener(){
-		return new ReactiveSensors(MainActivity.this).observeSensor(Sensor.TYPE_ACCELEROMETER)
+		return new ReactiveSensors(MainActivity.this).observeSensor(Sensor.TYPE_ACCELEROMETER, mSensorDelay)
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribeOn(Schedulers.io())
 				.filter(ReactiveSensorEvent.filterSensorChanged())
@@ -236,6 +236,8 @@ public class MainActivity extends AppCompatActivity {
                             mRawHistory.add(event.values.clone());    // dodavanje raw signala u listu
                             mFilterHistory.add(mCurrents.clone());    // dodavanje filtiranog signala u listu
                             mTempFilterList.add(mCurrents.clone());
+                        } else {
+                            mTempFilterList.clear();
                         }
 
                         // Izracunavanje vektora akceleracije R - osa
@@ -290,7 +292,7 @@ public class MainActivity extends AppCompatActivity {
                                 double currentRmsXYZ = (Math.abs(Math.sqrt(Math.pow(values[0], 2)
                                         + Math.pow(values[1], 2)
                                         + Math.pow(values[2], 2))));
-                                rmsXYZ += currentRmsXYZ;
+                                rmsXYZ +=  Math.pow(currentRmsXYZ, 2);;
                                 if (currentRmsXYZ > maxXYZ) {
                                     maxXYZ = currentRmsXYZ;
                                 }
