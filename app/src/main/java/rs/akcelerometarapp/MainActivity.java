@@ -286,10 +286,10 @@ public class MainActivity extends AppCompatActivity {
 
                                 rmsX += Math.pow(values[0], 2);
                                 rmsY += Math.pow(values[1], 2);
-                                rmsZ += Math.pow(values[2] - 9.81, 2);
+                                rmsZ += Math.pow(values[2], 2);
                                 double currentRmsXYZ = (Math.abs(Math.sqrt(Math.pow(values[0], 2)
                                         + Math.pow(values[1], 2)
-                                        + Math.pow(values[2] - 9.81, 2))));
+                                        + Math.pow(values[2], 2))));
                                 rmsXYZ += currentRmsXYZ;
                                 if (currentRmsXYZ > maxXYZ) {
                                     maxXYZ = currentRmsXYZ;
