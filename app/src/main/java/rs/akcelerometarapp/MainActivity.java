@@ -355,6 +355,9 @@ public class MainActivity extends AppCompatActivity {
 			mSensorManager.registerListener(mSensorEventListener,
 					mAccelerometer, mSensorDelay);
 		}*/
+                        if (sensor.isUnsubscribed()){
+                            defineSensorListener();
+                        }
 
 						if (!mDrawRoop) {
 							// Vraćanje iscrtavanja grafa
@@ -366,7 +369,7 @@ public class MainActivity extends AppCompatActivity {
 					private void stopGraph() {
 						// Uklanjanje sensor listener
 						//	mSensorManager.unregisterListener(mSensorEventListener);
-
+                        sensor.unsubscribe();
 						// Zaustavljanje iscrtavanja grafa
 						mDrawRoop = false;
 					}
