@@ -78,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
 	private float[] mCurrents = new float[4];
 	private ConcurrentLinkedQueue<float[]> mHistory = new ConcurrentLinkedQueue<float[]>();
 	private ConcurrentLinkedQueue<float[]> mRawHistory = new ConcurrentLinkedQueue<float[]>();
+	private ConcurrentLinkedQueue<float[]> mFilterHistory = new ConcurrentLinkedQueue<float[]>();
 	private TextView[] mAccValueViews = new TextView[4];
 	private float[] mLowPassFilters = {0.0f, 0.0f, 0.0f, 0.0f};
 	private boolean[] mGraphs = {true, true, true, true};
@@ -206,12 +207,6 @@ public class MainActivity extends AppCompatActivity {
 
 						SensorEvent event = reactiveSensorEvent.getSensorEvent();
 
-
-						if (mRecording) {
-							mRawHistory.add(event.values.clone());
-						}
-
-
 							for (int angle = 0; angle < 3; angle++) {
 								float value = event.values[angle];
 
@@ -235,6 +230,11 @@ public class MainActivity extends AppCompatActivity {
 								mAccValueViews[angle].setText(String.valueOf(value));
 
 							}
+
+                        if (mRecording) {
+                            mRawHistory.add(event.values.clone());	// dodavanje raw signala u listu
+                            mFilterHistory.add(mCurrents.clone());	// dodavanje filtiranog signala u listu
+                        }
 
 							// Izracunavanje vektora akceleracije R - osa
 							@SuppressWarnings("deprecation")
@@ -841,71 +841,95 @@ public class MainActivity extends AppCompatActivity {
 						}
 					}
 
-					private class SaveThread extends Thread {
-						@Override
-						public void run() {
+    private class SaveThread extends Thread {
+        @Override
+        public void run() {
 
-							// Kreiranje datoteke u CSV formatu
-							StringBuilder csvData = new StringBuilder();
-							// Iterator za ConcurrentLinkedQueue<float[]> mRawHistory
-							Iterator<float[]> iterator = mRawHistory.iterator();
-							//Iteracija kroz strukturu i formatiranje izvestaja sa zarezom i novim redom
-							while (iterator.hasNext()) {
-								float[] values = iterator.next();
-								for (int angle = 0; angle < 3; angle++) {
-									csvData.append(String.valueOf(values[angle]));
-									if (angle < 3) {
-										csvData.append(",");
-									}
-								}
-								csvData.append("\n");
-							}
+            // Kreiranje datoteke u CSV formatu
+            StringBuilder csvData = new StringBuilder();
+            // Iterator za ConcurrentLinkedQueue<float[]> mRawHistory
+            Iterator<float[]> iteratorpom = mHistory.iterator();			// uvek ima 230 odmeraka,LOSE, pomocna lista, NE KORISTI SE
+            Iterator<float[]> iterator = mFilterHistory.iterator();
+            Iterator<float[]> iteratorRaw = mRawHistory.iterator();
 
-							// Priprema za Poruku
-							Message msg = new Message();
-							Bundle bundle = new Bundle();
+            // sinhonizacija listi da se poklapaju podaci na grafiku, sad mozda i ne treba
+            int n = mHistory.size();
+            int nRaw = mRawHistory.size();
+            // pomera se filtrirana lista
+            for (int i = 0; i < n-nRaw; i++)
+                iterator.next();
+            // kraj sinhonizacije
 
-							try {
-								// Kreiranje direktorijuma na SD kartici ako ne postoji
-								String appName = getResources().getString(R.string.app_name);
-								String dirPath = Environment.getExternalStorageDirectory()
-										.toString() + "/" + appName;
-								File dir = new File(dirPath);
-								if (!dir.exists()) {
-									dir.mkdirs();
-								}
+            //Iteracija kroz strukturu i formatiranje izvestaja sa zarezom i novim redom
+            while (iterator.hasNext() && iteratorRaw.hasNext()) {
+                float[] values = iterator.next();
+                float[] valuesRaw = iteratorRaw.next();
+                for (int angle = 0; angle < 3; angle++) {
+                    csvData.append(String.valueOf(values[angle]));
+                    if (angle < 3) {
+                        csvData.append(",");
+                    }
+                }
+                for (int angle = 0; angle < 3; angle++) {
+                    csvData.append(String.valueOf(valuesRaw[angle]));
+                    if (angle < 3) {
+                        csvData.append(",");
+                    }
+                }
+                csvData.append("\n");
+            }
 
-								// Snimanje u CSV datoteku
-								String fileName = DateFormat
-										.format("yyyy-MM-dd-kk-mm-ss",
-												System.currentTimeMillis()).toString()
-										.concat(".csv");
-								File file = new File(dirPath, fileName);
-								if (file.createNewFile()) {
-									FileOutputStream fileOutputStream = new FileOutputStream(
-											file);
-									// Unos podataka
-									fileOutputStream.write(csvData.toString().getBytes());
-									fileOutputStream.close();
-								}
+//			csvData.append(String.valueOf(mFilterHistory.size()));	// velicina filtirane liste
+//			csvData.append("\n");
+//			csvData.append(String.valueOf(mRawHistory.size()));		// velicina raw liste
+//			csvData.append("\n");
 
-								// Kompletirenje unosa podataka u datoteku
-								bundle.putString("msg", MainActivity.this.getResources()
-										.getString(R.string.save_complate));
-								bundle.putBoolean("success", true);
-							} catch (Exception e) {
-								Log.e(TAG, e.getMessage());
 
-								// Upozorenje o neuspelom snimanju
-								bundle.putString("msg", e.getMessage());
-								bundle.putBoolean("success", false);
-							}
+            // Priprema za Poruku
+            Message msg = new Message();
+            Bundle bundle = new Bundle();
 
-							// Messaging koristi handler
-							msg.setData(bundle);
-							mHandler.sendMessage(msg);
-						}
-					}
+            try {
+                // Kreiranje direktorijuma na SD kartici ako ne postoji
+                String appName = getResources().getString(R.string.app_name);
+                String dirPath = Environment.getExternalStorageDirectory()
+                        .toString() + "/" + appName;
+                File dir = new File(dirPath);
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+
+                // Snimanje u CSV datoteku
+                String fileName = DateFormat
+                        .format("yyyy-MM-dd-kk-mm-ss",
+                                System.currentTimeMillis()).toString()
+                        .concat(".csv");
+                File file = new File(dirPath, fileName);
+                if (file.createNewFile()) {
+                    FileOutputStream fileOutputStream = new FileOutputStream(
+                            file);
+                    // Unos podataka
+                    fileOutputStream.write(csvData.toString().getBytes());
+                    fileOutputStream.close();
+                }
+
+                // Kompletirenje unosa podataka u datoteku
+                bundle.putString("msg", MainActivity.this.getResources()
+                        .getString(R.string.save_complate));
+                bundle.putBoolean("success", true);
+            } catch (Exception e) {
+//				Log.e(TAG, e.getMessage());
+
+                // Upozorenje o neuspelom snimanju
+                bundle.putString("msg", e.getMessage());
+                bundle.putBoolean("success", false);
+            }
+
+            // Messaging koristi handler
+            msg.setData(bundle);
+            mHandler.sendMessage(msg);
+        }
+    }
 
 					public float maksimalnaVrednost(float fReal, float max) {
 						if (fReal > max) {
