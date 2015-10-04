@@ -10,7 +10,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Environment;
@@ -45,13 +44,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
-import rx.functions.Func1;
-import rx.internal.operators.OnSubscribeUsing;
 import rx.schedulers.Schedulers;
 
 
@@ -75,10 +70,16 @@ public class MainActivity extends AppCompatActivity {
 
 	private static final int DIALOG_SAVE_PROGRESS = 0;
 
+    private static final int SAMPLES_COUNT = 200;
+    private static final double RMS_TRACEHOLD = 0.315;
+
 	private float[] mCurrents = new float[4];
 	private ConcurrentLinkedQueue<float[]> mHistory = new ConcurrentLinkedQueue<float[]>();
 	private ConcurrentLinkedQueue<float[]> mRawHistory = new ConcurrentLinkedQueue<float[]>();
 	private ConcurrentLinkedQueue<float[]> mFilterHistory = new ConcurrentLinkedQueue<float[]>();
+
+    private ConcurrentLinkedQueue<float[]> mTempFilterList = new ConcurrentLinkedQueue<float[]>();
+
 	private TextView[] mAccValueViews = new TextView[4];
 	private float[] mLowPassFilters = {0.0f, 0.0f, 0.0f, 0.0f};
 	private boolean[] mGraphs = {true, true, true, true};
@@ -205,68 +206,119 @@ public class MainActivity extends AppCompatActivity {
 					public void onNext(ReactiveSensorEvent reactiveSensorEvent) {
 
 
-						SensorEvent event = reactiveSensorEvent.getSensorEvent();
+                        SensorEvent event = reactiveSensorEvent.getSensorEvent();
 
-							for (int angle = 0; angle < 3; angle++) {
-								float value = event.values[angle];
+                        for (int angle = 0; angle < 3; angle++) {
+                            float value = event.values[angle];
 
-								// Kreiranje low-pass filtera po formuli  aX = (x*0.1)+(ax*(1-0.1))
-								mLowPassFilters[angle] = (mLowPassFilters[angle] * (1 - mFilterRate))
-										+ (value * mFilterRate);
-								// Filter
-								switch (mPassFilter) {
-									case PASS_FILTER_LOW:
+                            // Kreiranje low-pass filtera po formuli  aX = (x*0.1)+(ax*(1-0.1))
+                            mLowPassFilters[angle] = (mLowPassFilters[angle] * (1 - mFilterRate))
+                                    + (value * mFilterRate);
+                            // Filter
+                            switch (mPassFilter) {
+                                case PASS_FILTER_LOW:
 
-										value = mLowPassFilters[angle];
+                                    value = mLowPassFilters[angle];
 
-										break;
-									//High-pass filter po formuli aX = aX-((x*0.1)+(ax*(1-0.1)))
-									case PASS_FILTER_HIGH:
-										value -= mLowPassFilters[angle];
+                                    break;
+                                //High-pass filter po formuli aX = aX-((x*0.1)+(ax*(1-0.1)))
+                                case PASS_FILTER_HIGH:
+                                    value -= mLowPassFilters[angle];
 
-										break;
-								}
-								mCurrents[angle] = value;
-								mAccValueViews[angle].setText(String.valueOf(value));
+                                    break;
+                            }
+                            mCurrents[angle] = value;
+                            mAccValueViews[angle].setText(String.valueOf(value));
 
-							}
-
-                        if (mRecording) {
-                            mRawHistory.add(event.values.clone());	// dodavanje raw signala u listu
-                            mFilterHistory.add(mCurrents.clone());	// dodavanje filtiranog signala u listu
                         }
 
-							// Izracunavanje vektora akceleracije R - osa
-							@SuppressWarnings("deprecation")
-							Double dReal = new Double(Math.abs(Math.sqrt(Math.pow(
-									event.values[SensorManager.DATA_X], 2)
-									+ Math.pow(event.values[SensorManager.DATA_Y], 2)
-									+ Math.pow(event.values[SensorManager.DATA_Z], 2))));
-							fReal = dReal.floatValue();
-							// Kreiranje low-pass filtera
-							mLowPassFilters[DATA_R] = (mLowPassFilters[DATA_R] * (1 - mFilterRate))
-									+ (fReal * mFilterRate);
-							// filter
-							switch (mPassFilter) {
-								case PASS_FILTER_LOW:
-									fReal = mLowPassFilters[DATA_R];
-									break;
-								case PASS_FILTER_HIGH:
-									fReal -= mLowPassFilters[DATA_R];
-									break;
-							}
-							mCurrents[DATA_R] = fReal;
-							mAccValueViews[DATA_R].setText(String.valueOf(fReal));
+                        if (mRecording) {
+                            mRawHistory.add(event.values.clone());    // dodavanje raw signala u listu
+                            mFilterHistory.add(mCurrents.clone());    // dodavanje filtiranog signala u listu
+                            mTempFilterList.add(mCurrents.clone());
+                        }
 
-							synchronized (this) {
-								// History register
-								if (mHistory.size() >= mMaxHistorySize) {
-									mHistory.poll();
-								}
-								mHistory.add(mCurrents.clone());
-							}
-						}
+                        // Izracunavanje vektora akceleracije R - osa
+                        @SuppressWarnings("deprecation")
+                        Double dReal = new Double(Math.abs(Math.sqrt(Math.pow(
+                                event.values[SensorManager.DATA_X], 2)
+                                + Math.pow(event.values[SensorManager.DATA_Y], 2)
+                                + Math.pow(event.values[SensorManager.DATA_Z], 2))));
+                        fReal = dReal.floatValue();
+                        // Kreiranje low-pass filtera
+                        mLowPassFilters[DATA_R] = (mLowPassFilters[DATA_R] * (1 - mFilterRate))
+                                + (fReal * mFilterRate);
+                        // filter
+                        switch (mPassFilter) {
+                            case PASS_FILTER_LOW:
+                                fReal = mLowPassFilters[DATA_R];
+                                break;
+                            case PASS_FILTER_HIGH:
+                                fReal -= mLowPassFilters[DATA_R];
+                                break;
+                        }
+                        mCurrents[DATA_R] = fReal;
+                        mAccValueViews[DATA_R].setText(String.valueOf(fReal));
 
+                        //Log.d(TAG, "currents: " + mCurrents[0] + " " + mCurrents[1] + " " + mCurrents[2] + " " + mCurrents[3]);
+                        synchronized (this) {
+                            // History register
+                            if (mHistory.size() >= mMaxHistorySize) {
+                                mHistory.poll();
+                            }
+                            mHistory.add(mCurrents.clone());
+                        }
+
+                       // Log.d(TAG, " " + mTempFilterList.size());
+                        if (mTempFilterList.size() > SAMPLES_COUNT) {
+
+                            Iterator<float[]> iterator = mTempFilterList.iterator();
+
+                            double rmsX = 0;
+                            double rmsY = 0;
+                            double rmsZ = 0;
+                            double rmsXYZ = 0;
+                            double maxXYZ = 0;
+
+                            int i = 0;
+                            while (iterator.hasNext()) {
+                                float[] values = iterator.next();
+
+                                rmsX += Math.pow(values[0], 2);
+                                rmsY += Math.pow(values[1], 2);
+                                rmsZ += Math.pow(values[2] - 9.81, 2);
+                                double currentRmsXYZ = (Math.abs(Math.sqrt(Math.pow(values[0], 2)
+                                        + Math.pow(values[1], 2)
+                                        + Math.pow(values[2] - 9.81, 2))));
+                                rmsXYZ += currentRmsXYZ;
+                                if (currentRmsXYZ > maxXYZ) {
+                                    maxXYZ = currentRmsXYZ;
+                                }
+
+                                if (i < 10) {
+                                    mTempFilterList.remove(values);
+                                    Log.d(TAG, "remove first");
+                                }
+                                i++;
+                            }
+
+                            rmsX = Math.sqrt(rmsX/SAMPLES_COUNT);
+                            rmsY = Math.sqrt(rmsY/SAMPLES_COUNT);
+                            rmsZ = Math.sqrt(rmsZ/SAMPLES_COUNT);
+                            rmsXYZ = Math.sqrt(rmsXYZ/SAMPLES_COUNT);
+
+                            if (rmsXYZ > RMS_TRACEHOLD) {
+
+                                //Get GPS
+                                //Create Point in KML File
+                                Log.d(TAG, "RMS X: " + rmsX);
+                                Log.d(TAG, "RMS Y: " + rmsY);
+                                Log.d(TAG, "RMS Z: " + rmsZ);
+                                Log.d(TAG, "Max RMS XYZ: " + maxXYZ);
+                                Log.d(TAG, "RMS XYZ: " + rmsXYZ);
+                            }
+                        }
+                    }
 
 				});
 
