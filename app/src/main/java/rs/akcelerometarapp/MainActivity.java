@@ -270,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                        // Log.d(TAG, " " + mTempFilterList.size());
-                        if (mTempFilterList.size() > SAMPLES_COUNT) {
+                        if (mTempFilterList.size() == SAMPLES_COUNT) {
 
                             Iterator<float[]> iterator = mTempFilterList.iterator();
 
