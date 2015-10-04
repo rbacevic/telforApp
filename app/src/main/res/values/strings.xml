@@ -1,3 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AkcelerometarApp</string>
+
+    <string name="app_name">Akcelerometar_AP</string>
+    <string name="accele_x_label">X</string>
+    <string name="accele_y_label">Y</string>
+    <string name="accele_z_label">Z</string>
+    <string name="accele_r_label">R</string>
+    <string name="sensor_delay_label">Sensor Kasnjenje</string>
+    <string name="save_label">Snimi očitavanje</string>
+    <string name="end_label">Kraj očitavanja</string>
+    <string name="save_complate">Završi snimanje</string>
+    <string name="start_save_label">Započni snimanje</string>
+    <string name="start_save_msg">Početak Snimanja MSG</string>
+    <string name="version">1.1</string>
+    <string name="menu_settings">Podešavanja</string>
+
 </resources>

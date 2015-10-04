@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@android:color/black" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:id="@+id/frame"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <CheckBox
+                        android:id="@+id/accele_x"
+                        style="@style/accele_checkbox"
+                        android:text="@string/accele_x_label"
+                        android:textColor="@color/accele_x"
+                        />
+
+                    <TextView
+                        android:id="@+id/accele_x_value"
+                        style="@style/accele_value"
+                        />
+
+                    <CheckBox
+                        android:id="@+id/accele_y"
+                        style="@style/accele_checkbox"
+                        android:text="@string/accele_y_label"
+                        android:textColor="@color/accele_y"
+                       />
+
+                    <TextView
+                        android:id="@+id/accele_y_value"
+                        style="@style/accele_value"
+                        />
+
+                    <CheckBox
+                        android:id="@+id/accele_z"
+                        style="@style/accele_checkbox"
+                        android:text="@string/accele_z_label"
+                        android:textColor="@color/accele_z"
+                       />
+
+                    <TextView
+                        android:id="@+id/accele_z_value"
+                        style="@style/accele_value"
+                        />
+
+                    <CheckBox
+                        android:id="@+id/accele_r"
+                        style="@style/accele_checkbox"
+                        android:text="@string/accele_r_label"
+                        android:textColor="@color/accele_r"
+                       />
+
+                    <TextView
+                        android:id="@+id/accele_r_value"
+                        style="@style/accele_value"
+                        />
+
+                    <TextView
+                        android:id="@+id/value"
+                        style="@style/accele_value"
+                        />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <RadioGroup
+                        android:id="@+id/pass_filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <RadioButton
+                            android:id="@+id/pass_filter_raw"
+                            style="@style/pass_filter"
+                            android:text="RAW"
+                          />
+
+                        <RadioButton
+                            android:id="@+id/pass_filter_low"
+                            style="@style/pass_filter"
+                            android:text="LOW"
+                            />
+
+                        <RadioButton
+                            android:id="@+id/pass_filter_high"
+                            style="@style/pass_filter"
+                            android:text="HIGH"
+                            />
+
+                    </RadioGroup>
+
+                    <TextView
+                        android:id="@+id/filter_rate_value"
+                        android:layout_width="40dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:paddingLeft="3dp"
+                        android:paddingRight="3dp"/>
+
+                    <SeekBar
+                        android:id="@+id/filter_rate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </FrameLayout>
+    </LinearLayout>
+</LinearLayout>

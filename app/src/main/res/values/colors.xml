@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3F51B5</color>
-    <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
+
+    <color name="accele_x">#EEFF6464</color>
+    <color name="accele_y">#EE64FF64</color>
+    <color name="accele_z">#EE6464FF</color>
+    <color name="accele_r">#EEFFFF64</color>
+    <color name="zero_line">#64FFFFFF</color>
+    <color name="string">#FFFFFFFF</color>
+    <color name="background">#FF333333</color>
+
 </resources>
