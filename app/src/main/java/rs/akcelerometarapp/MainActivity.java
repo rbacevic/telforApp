@@ -108,6 +108,8 @@ public class MainActivity extends AppCompatActivity {
     private GraphView mGraphView;
     private TextView mFilterRateView;
 
+    private String kmlElements = new String();
+    private int kmlPointsCounter = 0;
 
     // Kasnjenje podataka predefinisan za pocetak rada na SENSOR_DELAY_UI
     // Kroz implementiranu logiku moguce ga je prome u meniju kasnije
@@ -589,10 +591,12 @@ public class MainActivity extends AppCompatActivity {
                             rmsZ = Math.sqrt(rmsZ / SAMPLES_COUNT);
                             rmsXYZ = Math.sqrt(rmsXYZ / SAMPLES_COUNT);
 
+                            Date date = new Date(locationOfMaxRms.getTime());
+                            java.text.DateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss:SSS");
+                            String dateFormatted = dateFormatter.format(date);
+
                             if (rmsXYZ > RMS_TRACEHOLD) {
-                                Date date = new Date(locationOfMaxRms.getTime());
-                                java.text.DateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss:SSS");
-                                String dateFormatted = dateFormatter.format(date);
+
                                 //Get GPS
                                 //Create Point in KML File
                                 Log.d(TAG, "RMS X: " + rmsX);
@@ -603,6 +607,12 @@ public class MainActivity extends AppCompatActivity {
                                 Log.d("latitude",locationOfMaxRms.getLatitude()+"");
                                 Log.d("longitude",locationOfMaxRms.getLongitude()+"");
                                 Log.d("time",dateFormatted+"");
+
+                                createPointInKMLFile("highlightPlacemark", locationOfMaxRms, rmsX,
+                                        rmsY, rmsZ, rmsXYZ, maxXYZ, dateFormatted);
+                            } else {
+                                createPointInKMLFile("normalPlacemark", locationOfMaxRms, rmsX,
+                                        rmsY, rmsZ, rmsXYZ, maxXYZ, dateFormatted);
                             }
                         }
                     }
@@ -613,6 +623,31 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void createPointInKMLFile(String pointStyle, Location location, Double rmsX,
+                                      Double rmsY, Double rmsZ, Double rmsXYZ, Double maxRmsXYZ,
+                                      String dateFormatted) {
+
+        String kmlelement ="\t<Placemark>\n" +
+                "<styleUrl>#" + pointStyle + "</styleUrl>"+
+                "\t<name>" + kmlPointsCounter + "</name>\n" +
+                "\t<description>"+ "<![CDATA["+
+                "Speed: " + location.getSpeed() + "\n"+
+                "RMS X: " + rmsX + "\n" +
+                "RMS Y: " + rmsY + "\n" +
+                "RMS Z: " + rmsZ + "\n" +
+                "Max RMS XYZ: " + maxRmsXYZ + "\n" +
+                "RMS XYZ: " + rmsXYZ + "\n" +
+                "Time: " + dateFormatted + "\n" +
+                "]]>" +
+                "</description>\n" +
+                "\t<Point>\n" +
+                "\t\t<coordinates>"+ location.getLongitude() +","+location.getLatitude()+","+0+ "</coordinates>\n" +
+                "\t</Point>\n" +
+                "\t</Placemark>\n";
+        kmlElements = kmlElements + kmlelement;
+
+        kmlPointsCounter++;
+    }
 
     private Handler mHandler = new Handler() {
         @Override
@@ -872,6 +907,32 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
 
+            String kmlStart = "<?xml version='1.0' encoding='UTF-8'?>\n" +
+                    "<kml xmlns='http://www.opengis.net/kml/2.2'>\n" +
+                    "<Document>\n" +
+                    "<name>TEST DRIVE</name> \n"+
+                    "<description>DCR</description> \n"+
+                    "<Style id='highlightPlacemark'> \n"+
+                    "<IconStyle> \n"+
+                    "<Icon> \n"+
+                    "<href>http://www.google.com/mapfiles/ms/micons/earthquake.png</href> \n"+
+                    "</Icon> \n"+
+                    "</IconStyle> \n"+
+                    "</Style> \n"+
+                    "<Style id='normalPlacemark'> \n"+
+                    "<IconStyle> \n"+
+                    "<Icon> \n"+
+                    "<href>http://maps.google.com/mapfiles/kml/paddle/blu-blank.png</href> \n"+
+                    "</Icon> \n"+
+                    "</IconStyle> \n"+
+                    "</Style> \n";
+
+            String kmlend = "</Document>\n</kml>";
+
+            String kmlContent = kmlStart;
+            kmlContent = kmlContent + kmlElements;
+            kmlContent = kmlContent + kmlend;
+
             // Kreiranje datoteke u CSV formatu
             StringBuilder csvData = new StringBuilder();
             // Iterator za ConcurrentLinkedQueue<float[]> mRawHistory
@@ -936,6 +997,20 @@ public class MainActivity extends AppCompatActivity {
                     // Unos podataka
                     fileOutputStream.write(csvData.toString().getBytes());
                     fileOutputStream.close();
+                }
+
+                //Snimanje u kml datoteku
+                String kmlFileName = DateFormat
+                        .format("yyyy-MM-dd-kk-mm-ss",
+                                System.currentTimeMillis()).toString()
+                        .concat(".kml");
+                File kmlFile = new File(dirPath, kmlFileName);
+                if (kmlFile.createNewFile()) {
+                    FileOutputStream kmlFileOutputStream = new FileOutputStream(
+                            kmlFile);
+                    // Unos podataka
+                    kmlFileOutputStream.write(kmlContent.toString().getBytes());
+                    kmlFileOutputStream.close();
                 }
 
                 // Kompletirenje unosa podataka u datoteku
