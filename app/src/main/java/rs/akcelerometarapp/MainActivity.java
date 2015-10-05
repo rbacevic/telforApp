@@ -91,8 +91,8 @@ public class MainActivity extends AppCompatActivity {
 
 	private GraphView mGraphView;
 	private TextView mFilterRateView;
-	private SensorManager mSensorManager;
-	private Sensor mAccelerometer;
+
+
 
 	// Kasnjenje podataka predefinisan za pocetak rada na SENSOR_DELAY_UI
 	// Kroz implementiranu logiku moguce ga je prome u meniju kasnije
@@ -114,80 +114,18 @@ public class MainActivity extends AppCompatActivity {
 	TextView maxi;
 	float fReal;
 	Subscription sensor;
+	ReactiveSensors reactiveSensor;
 
-	/*private SensorEventListener mSensorEventListener = new SensorEventListener() {
-
-		@Override
-		public void onAccuracyChanged(Sensor sensor, int accuracy) {
-			Log.i(TAG, "mSensorEventListener.onAccuracyChanged()");
+	public void initialize(){
+		reactiveSensor= new ReactiveSensors(MainActivity.this);
+		if(reactiveSensor.hasSensor(Sensor.TYPE_ACCELEROMETER)){
+			sensor=defineSensorListener();
+		} else {
+			Toast.makeText(MainActivity.this,"NIJE PRONADjEN AKCELEROMETAR!",Toast.LENGTH_SHORT).show();
 		}
-
-		@Override
-		public void onSensorChanged(final SensorEvent event) {
-            if (mRecording) {
-                mRawHistory.add(event.values.clone());
-            }
-
-            for (int angle = 0; angle < 3; angle++) {
-                float value = event.values[angle];
-                // Kreiranje low-pass filtera po formuli  aX = (x*0.1)+(ax*(1-0.1))
-                mLowPassFilters[angle] = (mLowPassFilters[angle] * (1 - mFilterRate))
-                        + (value * mFilterRate);
-                // Filter
-                switch (mPassFilter) {
-                    case PASS_FILTER_LOW:
-                        value = mLowPassFilters[angle];
-                        break;
-                    //High-pass filter po formuli aX = aX-((x*0.1)+(ax*(1-0.1)))
-                    case PASS_FILTER_HIGH:
-                        value -= mLowPassFilters[angle];
-                        break;
-                }
-                mCurrents[angle] = value;
-                mAccValueViews[angle].setText(String.valueOf(value));
-            }
-
-            // Izracunavanje vektora akceleracije R - osa
-            @SuppressWarnings("deprecation")
-            Double dReal = new Double(Math.abs(Math.sqrt(Math.pow(
-                    event.values[SensorManager.DATA_X], 2)
-                    + Math.pow(event.values[SensorManager.DATA_Y], 2)
-                    + Math.pow(event.values[SensorManager.DATA_Z], 2))));
-            fReal = dReal.floatValue();
-            // Kreiranje low-pass filtera
-            mLowPassFilters[DATA_R] = (mLowPassFilters[DATA_R] * (1 - mFilterRate))
-                    + (fReal * mFilterRate);
-            // filter
-            switch (mPassFilter) {
-                case PASS_FILTER_LOW:
-                    fReal = mLowPassFilters[DATA_R];
-                    max = maksimalnaVrednost(fReal, max);
-
-                    maxi.setText(max + "");
-                    break;
-                case PASS_FILTER_HIGH:
-                    fReal -= mLowPassFilters[DATA_R];
-                    max = maksimalnaVrednost(fReal, max);
-                    maxi.setText(max + "");
-                    break;
-            }
-            mCurrents[DATA_R] = fReal;
-            mAccValueViews[DATA_R].setText(String.valueOf(fReal));
-
-            synchronized (this) {
-                // History register
-                if (mHistory.size() >= mMaxHistorySize) {
-                    mHistory.poll();
-                }
-                mHistory.add(mCurrents.clone());
-            }
-
-        }
-
-
-	};*/
+	}
 	public Subscription defineSensorListener(){
-		return new ReactiveSensors(MainActivity.this).observeSensor(Sensor.TYPE_ACCELEROMETER, mSensorDelay)
+	Subscription sensor = reactiveSensor.observeSensor(Sensor.TYPE_ACCELEROMETER, mSensorDelay)
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribeOn(Schedulers.io())
 				.filter(ReactiveSensorEvent.filterSensorChanged())
@@ -217,10 +155,10 @@ public class MainActivity extends AppCompatActivity {
                             // Filter
                             switch (mPassFilter) {
                                 case PASS_FILTER_LOW:
-
+/*
                                     value = mLowPassFilters[angle];
 
-                                    break;
+                                    break;*/
                                 //High-pass filter po formuli aX = aX-((x*0.1)+(ax*(1-0.1)))
                                 case PASS_FILTER_HIGH:
                                     value -= mLowPassFilters[angle];
@@ -252,9 +190,9 @@ public class MainActivity extends AppCompatActivity {
                                 + (fReal * mFilterRate);
                         // filter
                         switch (mPassFilter) {
-                            case PASS_FILTER_LOW:
+                          /*  case PASS_FILTER_LOW:
                                 fReal = mLowPassFilters[DATA_R];
-                                break;
+                                break;*/
                             case PASS_FILTER_HIGH:
                                 fReal -= mLowPassFilters[DATA_R];
                                 break;
@@ -295,6 +233,8 @@ public class MainActivity extends AppCompatActivity {
                                 rmsXYZ +=  Math.pow(currentRmsXYZ, 2);;
                                 if (currentRmsXYZ > maxXYZ) {
                                     maxXYZ = currentRmsXYZ;
+
+
                                 }
 
                                 if (i < 10) {
@@ -324,10 +264,9 @@ public class MainActivity extends AppCompatActivity {
 
 				});
 
-
+				return sensor;
 
 	}
-
 
 
 					private Handler mHandler = new Handler() {
@@ -513,16 +452,8 @@ public class MainActivity extends AppCompatActivity {
 						Log.i(TAG, "MainActivity.onStart()");
 
 						//Inicijalizacija
-						mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-						List<Sensor> sensors = mSensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
-						//List<Sensor> sensors = mSensorManager.getSensorList(Sensor.TYPE_MAGNETIC_FIELD);
-						if (sensors.size() > 0) {
-							mAccelerometer = sensors.get(0);
-							sensor = defineSensorListener();
+						initialize();
 
-						} else {
-							Log.e(TAG, "NIJE PRONADjEN AKCELEROMETAR!");
-						}
 
 						super.onStart();
 					}
@@ -547,9 +478,6 @@ public class MainActivity extends AppCompatActivity {
 					@Override
 					protected void onStop() {
 						Log.i(TAG, "MainActivity.onStop()");
-
-						mSensorManager = null;
-						mAccelerometer = null;
 						sensor.unsubscribe();
 						super.onStop();
 					}
@@ -591,11 +519,11 @@ public class MainActivity extends AppCompatActivity {
 											//	mSensorManager.unregisterListener(mSensorEventListener);
 											mStatus = STATUS_STOP;
 										} else {
-											if (mAccelerometer != null) {
+											//if (mAccelerometer != null) {
 												// Restartivanje sensor listener-a
 												//mSensorManager.registerListener(mSensorEventListener,
 												//		mAccelerometer,mSensorDelay);
-											}
+											//}
 											mStatus = STATUS_START;
 										}
 										return true;
