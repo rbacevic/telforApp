@@ -8,5 +8,6 @@
     <color name="zero_line">#64FFFFFF</color>
     <color name="string">#FFFFFFFF</color>
     <color name="background">#FF333333</color>
+    <color name="invalid_input">#AAC5270C</color>
 
 </resources>

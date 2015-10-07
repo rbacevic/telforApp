@@ -1,4 +1,4 @@
-package rs.akcelerometarapp;
+package rs.akcelerometarapp.acivities;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -52,11 +52,10 @@ import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 
 import pl.charmas.android.reactivelocation.ReactiveLocationProvider;
+import rs.akcelerometarapp.R;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
@@ -64,7 +63,6 @@ import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
-
 
 public class MainActivity extends AppCompatActivity {
 
@@ -627,11 +625,12 @@ public class MainActivity extends AppCompatActivity {
                                       Double rmsY, Double rmsZ, Double rmsXYZ, Double maxRmsXYZ,
                                       String dateFormatted) {
 
+        double speedInKmPerHour = (location.getSpeed() * 3600) / 1000;
         String kmlelement ="\t<Placemark>\n" +
                 "<styleUrl>#" + pointStyle + "</styleUrl>"+
                 "\t<name>" + kmlPointsCounter + "</name>\n" +
                 "\t<description>"+ "<![CDATA["+
-                "Speed: " + location.getSpeed() + "\n"+
+                "Speed [km/h]: " + speedInKmPerHour + "\n"+
                 "RMS X: " + rmsX + "\n" +
                 "RMS Y: " + rmsY + "\n" +
                 "RMS Z: " + rmsZ + "\n" +

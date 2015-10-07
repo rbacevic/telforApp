@@ -15,4 +15,16 @@
     <string name="version">1.1</string>
     <string name="menu_settings">Podešavanja</string>
 
+    <!-- Progress Dialog -->
+    <string name="progress_dialog_text">Molimo vas sacekajte...</string>
+
+    <!-- Login Activity -->
+    <string name="login_title">Unesite korisnicke informacije</string>
+    <string name="login_button_title">Ulogujte se</string>
+    <string name="register_button_title">Registrujte se</string>
+    <string name="login_username">Korisnicko ime</string>
+    <string name="login_password">Lozinka</string>
+    <string name="username_missing">Niste uneli korisnicko ime</string>
+    <string name="password_missing">Niste uneli lozinku</string>
+
 </resources>
