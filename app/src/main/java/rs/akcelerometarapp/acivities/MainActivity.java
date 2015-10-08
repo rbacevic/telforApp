@@ -84,7 +84,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int DIALOG_SAVE_PROGRESS = 0;
 
-    private static final int SAMPLES_COUNT = 200;
     private static final double RMS_TRACEHOLD = 0.315;
 
     private float[] mCurrents = new float[4];
@@ -108,6 +107,11 @@ public class MainActivity extends AppCompatActivity {
 
     private String kmlElements = new String();
     private int kmlPointsCounter = 0;
+
+    // The minimum time between updates in milliseconds
+    private static final long TIME_INTERVAL_FOR_GETTING_RMS = 10 * 1000; // 10 seconds
+    private Date lastRMSDate;
+    private int samplesCount = 0;
 
     // Kasnjenje podataka predefinisan za pocetak rada na SENSOR_DELAY_UI
     // Kroz implementiranu logiku moguce ga je prome u meniju kasnije
@@ -136,6 +140,7 @@ public class MainActivity extends AppCompatActivity {
     LocationRequest locationRequest;
     Location locationOut;
     Location locationOfMaxRms;
+    private double valueOfMaxRMS;
     private static final int REQUEST_CHECK_SETTINGS = 0;
     /**
      * Called when the activity is first created.
@@ -422,6 +427,10 @@ public class MainActivity extends AppCompatActivity {
             case MENU_START_SAVE:
                 mRecording = true;
                 locationUpdatesObservable.subscribe();
+                lastRMSDate = new Date();
+                mTempFilterList.clear();
+                valueOfMaxRMS = 0;
+                samplesCount = 0;
                 Toast.makeText(this, R.string.start_save_msg, Toast.LENGTH_SHORT)
                         .show();
                 break;
@@ -496,8 +505,6 @@ public class MainActivity extends AppCompatActivity {
                             mRawHistory.add(event.values.clone());    // dodavanje raw signala u listu
                             mFilterHistory.add(mCurrents.clone());    // dodavanje filtiranog signala u listu
                             mTempFilterList.add(mCurrents.clone());
-                        } else {
-                            mTempFilterList.clear();
                         }
 
                         // Izracunavanje vektora akceleracije R - osa
@@ -531,63 +538,63 @@ public class MainActivity extends AppCompatActivity {
                             mHistory.add(mCurrents.clone());
                         }
 
-                        // Log.d(TAG, " " + mTempFilterList.size());
-                        if (mTempFilterList.size() == SAMPLES_COUNT) {
+                        double currentRmsXYZ = (Math.abs(Math.sqrt(Math.pow(mCurrents[0], 2)
+                                + Math.pow(mCurrents[1], 2)
+                                + Math.pow(mCurrents[2], 2))));
+                        samplesCount++;
 
+                        if (currentRmsXYZ > valueOfMaxRMS) {
+                            valueOfMaxRMS = currentRmsXYZ;
+                            updatableLocationSubscription = locationUpdatesObservable
+                                    .subscribe(new Subscriber<Location>() {
+                                        @Override
+                                        public void onCompleted() {
+
+                                        }
+
+                                        @Override
+                                        public void onError(Throwable e) {
+
+                                        }
+
+                                        @Override
+                                        public void onNext(Location location) {
+                                            locationOfMaxRms=location;
+                                        }
+                                    });
+                        }
+
+                        //check last update time
+                        long diff = -1;
+                        if(lastRMSDate != null) {
+                            diff = new Date().getTime() - lastRMSDate.getTime();
+                        } else {
+                            lastRMSDate = new Date();
+                        }
+
+                        if(diff > TIME_INTERVAL_FOR_GETTING_RMS ) {
                             Iterator<float[]> iterator = mTempFilterList.iterator();
 
                             double rmsX = 0;
                             double rmsY = 0;
                             double rmsZ = 0;
                             double rmsXYZ = 0;
-                            double maxXYZ = 0;
 
-                            int i = 0;
                             while (iterator.hasNext()) {
                                 float[] values = iterator.next();
 
                                 rmsX += Math.pow(values[0], 2);
                                 rmsY += Math.pow(values[1], 2);
                                 rmsZ += Math.pow(values[2], 2);
-                                double currentRmsXYZ = (Math.abs(Math.sqrt(Math.pow(values[0], 2)
+                                rmsXYZ += (Math.pow(values[0], 2)
                                         + Math.pow(values[1], 2)
-                                        + Math.pow(values[2], 2))));
-                                rmsXYZ += Math.pow(currentRmsXYZ, 2);
-                                ;
-                                if (currentRmsXYZ > maxXYZ) {
-                                    maxXYZ = currentRmsXYZ;
-                                    updatableLocationSubscription = locationUpdatesObservable
-                                            .subscribe(new Subscriber<Location>() {
-                                                @Override
-                                                public void onCompleted() {
-
-                                                }
-
-                                                @Override
-                                                public void onError(Throwable e) {
-
-                                                }
-
-                                                @Override
-                                                public void onNext(Location location) {
-                                                   locationOfMaxRms=location;
-                                                }
-                                            });
-
-
-                                }
-
-                                if (i < 10) {
-                                    mTempFilterList.remove(values);
-                                    Log.d(TAG, "remove first");
-                                }
-                                i++;
+                                        + Math.pow(values[2], 2));
                             }
 
-                            rmsX = Math.sqrt(rmsX / SAMPLES_COUNT);
-                            rmsY = Math.sqrt(rmsY / SAMPLES_COUNT);
-                            rmsZ = Math.sqrt(rmsZ / SAMPLES_COUNT);
-                            rmsXYZ = Math.sqrt(rmsXYZ / SAMPLES_COUNT);
+                            rmsX = Math.sqrt(rmsX / samplesCount);
+                            rmsY = Math.sqrt(rmsY / samplesCount);
+                            rmsZ = Math.sqrt(rmsZ / samplesCount);
+                            rmsXYZ = Math.sqrt(rmsXYZ / samplesCount);
 
                             Date date = new Date(locationOfMaxRms.getTime());
                             java.text.DateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss:SSS");
@@ -600,18 +607,23 @@ public class MainActivity extends AppCompatActivity {
                                 Log.d(TAG, "RMS X: " + rmsX);
                                 Log.d(TAG, "RMS Y: " + rmsY);
                                 Log.d(TAG, "RMS Z: " + rmsZ);
-                                Log.d(TAG, "Max RMS XYZ: " + maxXYZ);
+                                Log.d(TAG, "Max RMS XYZ: " + valueOfMaxRMS);
                                 Log.d(TAG, "RMS XYZ: " + rmsXYZ);
                                 Log.d("latitude",locationOfMaxRms.getLatitude()+"");
                                 Log.d("longitude",locationOfMaxRms.getLongitude()+"");
                                 Log.d("time",dateFormatted+"");
 
                                 createPointInKMLFile("highlightPlacemark", locationOfMaxRms, rmsX,
-                                        rmsY, rmsZ, rmsXYZ, maxXYZ, dateFormatted);
+                                        rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted);
                             } else {
                                 createPointInKMLFile("normalPlacemark", locationOfMaxRms, rmsX,
-                                        rmsY, rmsZ, rmsXYZ, maxXYZ, dateFormatted);
+                                        rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted);
                             }
+
+                            lastRMSDate = new Date();
+                            mTempFilterList.clear();
+                            valueOfMaxRMS = 0;
+                            samplesCount++;
                         }
                     }
 
