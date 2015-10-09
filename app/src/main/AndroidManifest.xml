@@ -23,6 +23,13 @@
             android:screenOrientation="landscape"
             android:theme="@style/AppBaseTheme">
         </activity>
+
+        <activity android:name=".acivities.RegisterActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="landscape"
+            android:theme="@style/AppBaseTheme">
+        </activity>
+
     </application>
 
 </manifest>

@@ -39,6 +39,7 @@ public class LoginActivity extends Activity {
 
     protected void setAllListeners () {
         loginButton.setOnClickListener(loginClickListener);
+        registerButton.setOnClickListener(registerClickListener);
     }
 
     protected boolean validateFields() {
@@ -70,6 +71,15 @@ public class LoginActivity extends Activity {
         }
     };
 
+    View.OnClickListener registerClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+
+            Intent newIntent = new Intent(LoginActivity.this, RegisterActivity.class);
+            startActivity(newIntent);
+        }
+    };
+
     protected void login(String username, String password) {
 
         ProgressDialogUtils.showProgressDialog(progressDialog);
@@ -77,8 +87,8 @@ public class LoginActivity extends Activity {
         //zatvoriti progress dialog
         //poruka success/fail
         ProgressDialogUtils.dismissProgressDialog(progressDialog);
-        Intent commentListIntent = new Intent(this, MainActivity.class);
-        startActivity(commentListIntent);
+        Intent newIntent = new Intent(this, MainActivity.class);
+        startActivity(newIntent);
     }
 
     protected TextView usernameTexView;
