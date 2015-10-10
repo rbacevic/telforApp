@@ -46,5 +46,6 @@
     <string name="crete_measurement">Zapocnite merenje</string>
     <string name="measurement_name_missing">Niste uneli ime merenja</string>
     <string name="user_id_missing">Doslo je do greske, molimo vas ulogujte se ponovo</string>
+    <string name="save_kml">Sacuvaj KML fajl</string>
 
 </resources>

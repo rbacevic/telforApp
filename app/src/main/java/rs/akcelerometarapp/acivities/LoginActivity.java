@@ -5,7 +5,6 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.StrictMode;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -19,7 +18,7 @@ import java.util.ArrayList;
 
 import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
-import rs.akcelerometarapp.network.dtos.URLS;
+import rs.akcelerometarapp.network.URLS;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
 
 /**
@@ -96,7 +95,7 @@ public class LoginActivity extends Activity {
 
         ProgressDialogUtils.showProgressDialog(progressDialog);
 
-        ArrayList<NameValuePair> postParameters = new ArrayList<NameValuePair>();
+        ArrayList<NameValuePair> postParameters = new ArrayList<>();
         postParameters.add(new BasicNameValuePair("username", username));
         postParameters.add(new BasicNameValuePair("password", password));
         postParameters.add(new BasicNameValuePair("akcija", "login"));

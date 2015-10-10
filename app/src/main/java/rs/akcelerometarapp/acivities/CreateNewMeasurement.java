@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.StrictMode;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 
 import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
+import rs.akcelerometarapp.network.URLS;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
 
 /**
@@ -44,13 +46,25 @@ public class CreateNewMeasurement extends Activity {
         measurementName = (EditText)findViewById(R.id.measurement_name);
         measurementDescription = (EditText)findViewById(R.id.measurement_description);
         startMeasurement = (Button)findViewById(R.id.start_measurement);
+        saveKMLFile = (CheckBox)findViewById(R.id.save_kml_file);
     }
 
     protected void collectData() {
+
         Bundle bundle = getIntent().getExtras();
-        userId = bundle.getCharSequence("id").toString();
-        username = bundle.getCharSequence("username").toString();
+        if (bundle != null) {
+            userId = bundle.getString("id");
+            username = bundle.getString("username");
+        }
         usernameTextView.setText(username);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        measurementName.setText("");
+        measurementDescription.setText("");
+        saveKMLFile.setChecked(false);
     }
 
     protected void setAllListeners () {
@@ -86,11 +100,12 @@ public class CreateNewMeasurement extends Activity {
 
     protected void startMeasure(String measurementName) {
 
-        /*ProgressDialogUtils.showProgressDialog(progressDialog);
+        ProgressDialogUtils.showProgressDialog(progressDialog);
 
-        ArrayList<NameValuePair> postParameters = new ArrayList<NameValuePair>();
-        postParameters.add(new BasicNameValuePair("naziv ", measurementName));
+        ArrayList<NameValuePair> postParameters = new ArrayList<>();
+        postParameters.add(new BasicNameValuePair("naziv", measurementName));
         postParameters.add(new BasicNameValuePair("idK", userId));
+        postParameters.add(new BasicNameValuePair("opis", measurementDescription.getText().toString()));
         postParameters.add(new BasicNameValuePair("akcija", "start"));
 
         String response = null;
@@ -109,10 +124,12 @@ public class CreateNewMeasurement extends Activity {
 
                 ProgressDialogUtils.dismissProgressDialog(progressDialog);
 
-                Intent newIntent = new Intent(this, MainActivity.class);
+                Intent newIntent = new Intent(this, AccelerometerActivity.class);
                 Bundle bundle = new Bundle();
                 bundle.putString("userID", userId);
                 bundle.putString("measurementId", res);
+                bundle.putString("opis", measurementDescription.getText().toString());
+                bundle.putBoolean("saveKML", saveKMLFile.isChecked());
                 newIntent.putExtras(bundle);
                 startActivity(newIntent);
 
@@ -124,15 +141,13 @@ public class CreateNewMeasurement extends Activity {
             ProgressDialogUtils.dismissProgressDialog(progressDialog);
             Toast.makeText(this, "Slaba konekcija sa internetom,pokusajte ponovo..", Toast.LENGTH_SHORT).show();
             e.printStackTrace();
-        }*/
-
-        Intent newIntent = new Intent(this, MainActivity.class);
-        startActivity(newIntent);
+        }
     }
 
     protected EditText measurementName;
     protected EditText measurementDescription;
     protected TextView usernameTextView;
+    protected CheckBox saveKMLFile;
     protected Button startMeasurement;
     protected ProgressDialog progressDialog;
     protected String userId;
