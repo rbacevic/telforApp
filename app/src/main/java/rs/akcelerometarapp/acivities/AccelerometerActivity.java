@@ -61,7 +61,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import pl.charmas.android.reactivelocation.ReactiveLocationProvider;
 import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
-import rs.akcelerometarapp.network.URLS;
+import rs.akcelerometarapp.network.dtos.URLS;
 import rs.akcelerometarapp.utils.KmlUtils;
 import rx.Observable;
 import rx.Subscriber;

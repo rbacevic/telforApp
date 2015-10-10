@@ -19,7 +19,7 @@ import java.util.ArrayList;
 
 import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
-import rs.akcelerometarapp.network.URLS;
+import rs.akcelerometarapp.network.dtos.URLS;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
 
 /**
