@@ -4,13 +4,22 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.StrictMode;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+
+import java.util.ArrayList;
+
 import rs.akcelerometarapp.R;
+import rs.akcelerometarapp.network.CustomHttpClient;
+import rs.akcelerometarapp.network.URLs;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
 
 /**
@@ -22,6 +31,9 @@ public class LoginActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login_activity);
+
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
 
         configUI();
         setAllListeners();
@@ -83,12 +95,43 @@ public class LoginActivity extends Activity {
     protected void login(String username, String password) {
 
         ProgressDialogUtils.showProgressDialog(progressDialog);
-        //odraditi poziv prema serveru
-        //zatvoriti progress dialog
-        //poruka success/fail
-        ProgressDialogUtils.dismissProgressDialog(progressDialog);
-        Intent newIntent = new Intent(this, MainActivity.class);
-        startActivity(newIntent);
+
+        ArrayList<NameValuePair> postParameters = new ArrayList<NameValuePair>();
+        postParameters.add(new BasicNameValuePair("username", username));
+        postParameters.add(new BasicNameValuePair("password", password));
+        postParameters.add(new BasicNameValuePair("akcija", "login"));
+
+        String response = null;
+
+        try {
+
+            response = CustomHttpClient.executeHttpPost(URLs.LoginURL(), postParameters);
+            String res=response.toString();
+            res= res.replaceAll("\\s+", "");
+
+            // Prebacivanje res u integer da bi moglo da se primeni u if-u
+            int rezultatPovratna = Integer.parseInt(res);
+
+            if(rezultatPovratna > 0){
+                Toast.makeText(this, "Uspesna verifikacija", Toast.LENGTH_SHORT).show();
+
+                ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                Intent newIntent = new Intent(this, CreateNewMeasurement.class);
+                Bundle bundle = new Bundle();
+                bundle.putString("id", res);
+                bundle.putString("username", username);
+                newIntent.putExtras(bundle);
+                startActivity(newIntent);
+
+            } else {
+                ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                Toast.makeText(this, "Pogresno korisnicko ime ili sifra", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            ProgressDialogUtils.dismissProgressDialog(progressDialog);
+            Toast.makeText(this, "Slaba konekcija sa internetom,pokusajte ponovo..", Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+        }
     }
 
     protected TextView usernameTexView;

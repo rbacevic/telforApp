@@ -22,21 +22,29 @@
     <string name="login_title">Unesite korisnicke informacije</string>
     <string name="login_button_title">Ulogujte se</string>
     <string name="register_button_title">Registrujte se</string>
-    <string name="login_username">Korisnicko ime</string>
-    <string name="login_password">Lozinka</string>
+    <string name="login_username">Korisnicko ime:</string>
+    <string name="login_password">Lozinka:</string>
     <string name="username_missing">Niste uneli korisnicko ime</string>
     <string name="password_missing">Niste uneli lozinku</string>
 
     <!-- Register Activity -->
     <string name="register_title">Registracija</string>
-    <string name="register_name">Ime</string>
-    <string name="register_last_name">Prezime</string>
-    <string name="register_email">Email</string>
-    <string name="repeat_register_password">Potvrdite lozinku</string>
+    <string name="register_name">Ime:</string>
+    <string name="register_last_name">Prezime:</string>
+    <string name="register_email">Email:</string>
+    <string name="repeat_register_password">Potvrdite lozinku:</string>
     <string name="name_missing">Niste uneli Vase ime</string>
     <string name="lastname_missing">Niste uneli Vase prezime</string>
     <string name="email_missing">Niste uneli email</string>
     <string name="confirm_password">Niste potvrdili lozinku</string>
     <string name="passwords_not_equal">Unete lozinke se ne poklapaju</string>
+
+    <!-- Create Measurement -->
+    <string name="crete_new_measurement">Kreirajte novo merenje</string>
+    <string name="measurement_name">Ime merenja:</string>
+    <string name="measurement_description">Opis merenja:</string>
+    <string name="crete_measurement">Zapocnite merenje</string>
+    <string name="measurement_name_missing">Niste uneli ime merenja</string>
+    <string name="user_id_missing">Doslo je do greske, molimo vas ulogujte se ponovo</string>
 
 </resources>

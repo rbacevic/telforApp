@@ -274,8 +274,6 @@ public class MainActivity extends AppCompatActivity {
                 mFilterRateView.setText(String.valueOf(aFloat));
             }
         });
-
-
     }
 
     @Override
@@ -468,7 +466,8 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(Throwable e) {
-
+                        Log.d("observable",e.toString());
+                        e.printStackTrace();
                     }
 
                     @Override
@@ -571,7 +570,7 @@ public class MainActivity extends AppCompatActivity {
                         } else {
                             lastRMSDate = new Date();
                         }
-
+                        int i = 0;
                         if(diff > TIME_INTERVAL_FOR_GETTING_RMS ) {
                             Iterator<float[]> iterator = mTempFilterList.iterator();
 
@@ -582,6 +581,9 @@ public class MainActivity extends AppCompatActivity {
 
                             while (iterator.hasNext()) {
                                 float[] values = iterator.next();
+
+                                Log.d(TAG, "" + i);
+                                i++;
 
                                 rmsX += Math.pow(values[0], 2);
                                 rmsY += Math.pow(values[1], 2);

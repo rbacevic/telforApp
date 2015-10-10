@@ -4,12 +4,20 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+
+import java.util.ArrayList;
+
 import rs.akcelerometarapp.R;
+import rs.akcelerometarapp.network.CustomHttpClient;
+import rs.akcelerometarapp.network.URLs;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
 
 /**
@@ -107,12 +115,52 @@ public class RegisterActivity extends Activity{
     protected void register(String username, String password, String name, String lastname, String email) {
 
         ProgressDialogUtils.showProgressDialog(progressDialog);
-        //odraditi poziv prema serveru
-        //zatvoriti progress dialog
-        //poruka success/fail
-        ProgressDialogUtils.dismissProgressDialog(progressDialog);
-        Intent newIntent = new Intent(this, MainActivity.class);
-        startActivity(newIntent);
+
+        ArrayList<NameValuePair> postParameters = new ArrayList<NameValuePair>();
+        postParameters.add(new BasicNameValuePair("username", username));
+        postParameters.add(new BasicNameValuePair("password", password));
+        postParameters.add(new BasicNameValuePair("username", username));
+        postParameters.add(new BasicNameValuePair("ime", name));
+        postParameters.add(new BasicNameValuePair("prezime", lastname));
+        postParameters.add(new BasicNameValuePair("email", email));
+        postParameters.add(new BasicNameValuePair("akcija", "registracija"));
+
+        String response = null;
+
+        try {
+
+            response = CustomHttpClient.executeHttpPost(URLs.RegisterURL(), postParameters);
+            String res = response.toString();
+            res= res.replaceAll("\\s+", "");
+
+            // Prebacivanje res u integer da bi moglo da se primeni u if-u
+            int rezultatPovratna = Integer.parseInt(res);
+
+            // response 0 - uspesna registracija
+            // response 1 - zauzet username
+            // response 2 - nisu sva polja popunjena
+
+            if(rezultatPovratna == 0) {
+                Toast.makeText(this, "Uspesna registracija", Toast.LENGTH_SHORT).show();
+
+                ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                Intent newIntent = new Intent(this, LoginActivity.class);
+                startActivity(newIntent);
+
+            } else if (rezultatPovratna == 1) {
+                ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                Toast.makeText(this, "Korsisnik sa unetim korisnickim imenom vec postoji.", Toast.LENGTH_SHORT).show();
+            } else  if (rezultatPovratna == 2) {
+                ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                Toast.makeText(this, "Niste popunili sva polja", Toast.LENGTH_SHORT).show();
+            }
+
+        } catch (Exception e) {
+            ProgressDialogUtils.dismissProgressDialog(progressDialog);
+            Toast.makeText(this, "Slaba konekcija sa internetom,pokusajte ponovo..", Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+        }
+
     }
 
     protected EditText usernameEditText;

@@ -26,19 +26,45 @@
             android:layout_marginRight="76dp"
             android:layout_gravity="center"
             android:layout_marginTop="20dp"
-            android:orientation="vertical" >
+            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/login_username_textView"
+            <LinearLayout
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="2dp"
+                    android:layout_marginRight="2dp"
+                    android:text="@string/login_username"
+                    android:textSize="12sp"/>
+
+                <TextView
+                    android:id="@+id/username_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="5dp"
+                    android:layout_marginRight="2dp"
+                    android:textStyle="italic"
+                    android:text="@string/login_username"
+                    android:textSize="14sp"/>
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
                 android:layout_marginLeft="2dp"
                 android:layout_marginRight="2dp"
-                android:text="@string/login_username"
+                android:text="@string/measurement_name"
                 android:textSize="12sp"/>
 
             <EditText
-                android:id="@+id/login_username"
+                android:id="@+id/measurement_name"
                 android:layout_marginTop="2dp"
                 android:layout_width="fill_parent"
                 android:layout_height="35dp"
@@ -50,20 +76,19 @@
                 android:background="@android:color/white"/>
 
             <TextView
-                android:id="@+id/login_password_textView"
                 android:layout_marginTop="10dp"
                 android:layout_marginLeft="2dp"
                 android:layout_marginRight="2dp"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/login_password"
+                android:text="@string/measurement_description"
                 android:textSize="12sp"/>
 
             <EditText
-                android:id="@+id/login_password"
+                android:id="@+id/measurement_description"
                 android:layout_marginTop="2dp"
                 android:layout_width="fill_parent"
-                android:layout_height="35dp"
+                android:layout_height="115dp"
                 android:singleLine="true"
                 android:paddingLeft="10dp"
                 android:paddingRight="10dp"
@@ -73,45 +98,20 @@
 
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="76dp"
-            android:layout_marginRight="76dp"
-            android:layout_gravity="center"
+        <Button
+            android:id="@+id/start_measurement"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
             android:layout_marginTop="20dp"
-            android:orientation="horizontal"
-            android:weightSum="10">
-
-            <Button
-                android:id="@+id/login_button"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_marginRight="10dp"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="20dp"
-                android:layout_gravity="center"
-                android:text="@string/login_button_title"
-                android:textSize="20sp"
-                android:textColor="@android:color/white"
-                android:layout_weight="5"
-                android:background="@android:color/darker_gray"/>
-
-            <Button
-                android:id="@+id/register_button"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_marginLeft="10dp"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="20dp"
-                android:layout_gravity="center"
-                android:text="@string/register_button_title"
-                android:textSize="20sp"
-                android:textColor="@android:color/white"
-                android:layout_weight="5"
-                android:background="@android:color/darker_gray"/>
-
-        </LinearLayout>
+            android:layout_marginBottom="20dp"
+            android:layout_gravity="center"
+            android:text="@string/crete_measurement"
+            android:textSize="20sp"
+            android:textColor="@android:color/white"
+            android:layout_weight="5"
+            android:background="@android:color/darker_gray"/>
 
     </LinearLayout>
 
