@@ -17,7 +17,7 @@ import java.util.ArrayList;
 
 import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
-import rs.akcelerometarapp.network.URLs;
+import rs.akcelerometarapp.network.dtos.URLS;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
 
 /**
@@ -129,7 +129,7 @@ public class RegisterActivity extends Activity{
 
         try {
 
-            response = CustomHttpClient.executeHttpPost(URLs.RegisterURL(), postParameters);
+            response = CustomHttpClient.executeHttpPost(URLS.RegisterURL(), postParameters);
             String res = response.toString();
             res= res.replaceAll("\\s+", "");
 

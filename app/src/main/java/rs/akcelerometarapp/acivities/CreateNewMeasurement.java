@@ -18,7 +18,6 @@ import java.util.ArrayList;
 
 import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
-import rs.akcelerometarapp.network.URLs;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
 
 /**
@@ -98,7 +97,7 @@ public class CreateNewMeasurement extends Activity {
 
         try {
 
-            response = CustomHttpClient.executeHttpPost(URLs.CreateMesurementURL(), postParameters);
+            response = CustomHttpClient.executeHttpPost(URLS.CreateMesurementURL(), postParameters);
             String res = response.toString();
             res= res.replaceAll("\\s+", "");
 
