@@ -6,12 +6,12 @@ package rs.akcelerometarapp.network.dtos;
 public class URLS {
 
     public static final String      BASE_URL                         = "http://192.168.1.3:8080/";
-
-    protected static final String   URL_REGISTER                     = "AndromapWebApp/ServletAndroid";
-    protected static final String   URL_LOGIN                        = "AndromapWebApp/ServletAndroid";
-    protected static final String   URL_CREATE_MEASUREMENT           = "AndromapWebApp/ServletMerenjeAndroid";
-    protected static final String   URL_ADD_POINT                    = "AndromapWebApp/ServletUpisTacke";
-    protected static final String   URL_STOP_MEASUREMENT             = "AndromapWebApp/ServletMerenjeAndroid";
+                                                                    //AndromapWebApp/ServletAndroid"
+    protected static final String   URL_REGISTER                     = "Andromap/ServletAndroid";
+    protected static final String   URL_LOGIN                        = "Andromap/ServletAndroid";
+    protected static final String   URL_CREATE_MEASUREMENT           = "Andromap/ServletMerenjeAndroid";
+    protected static final String   URL_ADD_POINT                    = "Andromap/ServletUpisTacke";
+    protected static final String   URL_STOP_MEASUREMENT             = "Andromap/ServletMerenjeAndroid";
 
     public static String RegisterURL() {
         return BASE_URL + URL_REGISTER;

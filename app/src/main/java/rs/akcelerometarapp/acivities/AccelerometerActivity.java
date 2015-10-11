@@ -52,6 +52,7 @@ import org.apache.http.message.BasicNameValuePair;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -439,6 +440,12 @@ public class AccelerometerActivity extends AppCompatActivity {
         dialogBuilder.show();
     }
 
+    private double roundFourDecimals(double d)
+    {
+        DecimalFormat twoDForm = new DecimalFormat("#.####");
+        return Double.valueOf(twoDForm.format(d));
+    }
+
     //*********************************** Private Data *******************************************//
 
     private void calculateRMS(ReactiveSensorEvent reactiveSensorEvent) {
@@ -463,7 +470,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                     break;
             }
             mCurrents[angle] = value;
-            mAccValueViews[angle].setText(String.valueOf(value));
+            mAccValueViews[angle].setText(String.valueOf(roundFourDecimals(value)));
 
         }
 
@@ -492,7 +499,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                 break;
         }
         mCurrents[DATA_R] = fReal;
-        mAccValueViews[DATA_R].setText(String.valueOf(fReal));
+        mAccValueViews[DATA_R].setText(String.valueOf(roundFourDecimals(fReal)));
 
         //Log.d(TAG, "currents: " + mCurrents[0] + " " + mCurrents[1] + " " + mCurrents[2] + " " + mCurrents[3]);
         synchronized (this) {
@@ -1075,7 +1082,7 @@ public class AccelerometerActivity extends AppCompatActivity {
     private final Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            dismissDialog(DIALOG_SAVE_PROGRESS);
+            removeDialog(DIALOG_SAVE_PROGRESS);
 
             Bundle data = msg.getData();
             if (data.getBoolean("success")) {
@@ -1150,7 +1157,7 @@ public class AccelerometerActivity extends AppCompatActivity {
     private int mZeroLineY = 230;
     private int mZeroLineYOffset = 0;
     private float mTouchOffset;
-    private int mPassFilter = PASS_FILTER_RAW;
+    private int mPassFilter = PASS_FILTER_HIGH;
     private float mFilterRate = 0.1f;
     private boolean mRecording = false;
     Toolbar toolbar;

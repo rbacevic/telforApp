@@ -78,10 +78,6 @@
                         style="@style/accele_value"
                         />
 
-                    <TextView
-                        android:id="@+id/value"
-                        style="@style/accele_value"
-                        />
                 </LinearLayout>
 
                 <LinearLayout
