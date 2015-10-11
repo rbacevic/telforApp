@@ -5,6 +5,10 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatButton;
+import android.support.v7.widget.AppCompatEditText;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -25,7 +29,7 @@ import rs.akcelerometarapp.utils.ProgressDialogUtils;
 /**
  * Created by RADEEE on 10-Oct-15.
  */
-public class CreateNewMeasurement extends Activity {
+public class CreateNewMeasurement extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,13 +44,20 @@ public class CreateNewMeasurement extends Activity {
         setAllListeners();
     }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+    }
+
     protected void configUI() {
         progressDialog = ProgressDialogUtils.initProgressDialog(this);
         usernameTextView = (TextView)findViewById(R.id.username_text);
-        measurementName = (EditText)findViewById(R.id.measurement_name);
-        measurementDescription = (EditText)findViewById(R.id.measurement_description);
-        startMeasurement = (Button)findViewById(R.id.start_measurement);
+        measurementName = (AppCompatEditText)findViewById(R.id.measurement_name);
+        measurementDescription = (AppCompatEditText)findViewById(R.id.measurement_description);
+        startMeasurement = (AppCompatButton)findViewById(R.id.start_measurement);
         saveKMLFile = (CheckBox)findViewById(R.id.save_kml_file);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
     }
 
     protected void collectData() {
@@ -144,14 +155,14 @@ public class CreateNewMeasurement extends Activity {
         }
     }
 
-    protected EditText measurementName;
-    protected EditText measurementDescription;
+    protected AppCompatEditText measurementName;
+    protected AppCompatEditText measurementDescription;
     protected TextView usernameTextView;
     protected CheckBox saveKMLFile;
-    protected Button startMeasurement;
+    protected AppCompatButton startMeasurement;
     protected ProgressDialog progressDialog;
     protected String userId;
     protected String username;
-
+    protected Toolbar toolbar;
     protected static final String TAG = "CreateNewMeasurement";
 }

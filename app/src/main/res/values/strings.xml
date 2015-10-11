@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Akcelerometar_AP</string>
+    <string name="app_name">VibroMap</string>
     <string name="accele_x_label">X</string>
     <string name="accele_y_label">Y</string>
     <string name="accele_z_label">Z</string>
@@ -22,17 +22,17 @@
     <string name="login_title">Unesite korisnicke informacije</string>
     <string name="login_button_title">Ulogujte se</string>
     <string name="register_button_title">Registrujte se</string>
-    <string name="login_username">Korisnicko ime:</string>
-    <string name="login_password">Lozinka:</string>
+    <string name="login_username">Korisnicko ime</string>
+    <string name="login_password">Lozinka</string>
     <string name="username_missing">Niste uneli korisnicko ime</string>
     <string name="password_missing">Niste uneli lozinku</string>
 
     <!-- Register Activity -->
     <string name="register_title">Registracija</string>
-    <string name="register_name">Ime:</string>
-    <string name="register_last_name">Prezime:</string>
-    <string name="register_email">Email:</string>
-    <string name="repeat_register_password">Potvrdite lozinku:</string>
+    <string name="register_name">Ime</string>
+    <string name="register_last_name">Prezime</string>
+    <string name="register_email">Email</string>
+    <string name="repeat_register_password">Potvrdite lozinku</string>
     <string name="name_missing">Niste uneli Vase ime</string>
     <string name="lastname_missing">Niste uneli Vase prezime</string>
     <string name="email_missing">Niste uneli email</string>
@@ -41,8 +41,8 @@
 
     <!-- Create Measurement -->
     <string name="crete_new_measurement">Kreirajte novo merenje</string>
-    <string name="measurement_name">Ime merenja:</string>
-    <string name="measurement_description">Opis merenja:</string>
+    <string name="measurement_name">Ime merenja</string>
+    <string name="measurement_description">Opis merenja</string>
     <string name="crete_measurement">Zapocnite merenje</string>
     <string name="measurement_name_missing">Niste uneli ime merenja</string>
     <string name="user_id_missing">Doslo je do greske, molimo vas ulogujte se ponovo</string>

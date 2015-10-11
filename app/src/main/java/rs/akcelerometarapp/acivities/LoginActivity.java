@@ -1,13 +1,16 @@
 package rs.akcelerometarapp.acivities;
 
-import android.app.Activity;
+
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatButton;
+import android.support.v7.widget.AppCompatEditText;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
+
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,7 +27,7 @@ import rs.akcelerometarapp.utils.ProgressDialogUtils;
 /**
  * Created by RADEEE on 07-Oct-15.
  */
-public class LoginActivity extends Activity {
+public class LoginActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,12 +43,13 @@ public class LoginActivity extends Activity {
 
     protected void configUI() {
         progressDialog = ProgressDialogUtils.initProgressDialog(this);
-        usernameTexView = (TextView)findViewById(R.id.login_username_textView);
-        passwordTexView = (TextView)findViewById(R.id.login_password_textView);
-        usernameEditText = (EditText)findViewById(R.id.login_username);
-        passwordEditText = (EditText)findViewById(R.id.login_password);
-        loginButton = (Button)findViewById(R.id.login_button);
-        registerButton = (Button)findViewById(R.id.register_button);
+
+        usernameEditText = (AppCompatEditText)findViewById(R.id.login_username);
+        passwordEditText = (AppCompatEditText)findViewById(R.id.login_password);
+        loginButton = (AppCompatButton)findViewById(R.id.login_button);
+        registerButton = (AppCompatButton)findViewById(R.id.register_button);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
     }
 
     protected void setAllListeners () {
@@ -133,13 +137,12 @@ public class LoginActivity extends Activity {
         }
     }
 
-    protected TextView usernameTexView;
-    protected TextView passwordTexView;
-    protected EditText usernameEditText;
-    protected EditText passwordEditText;
-    protected Button loginButton;
-    protected Button registerButton;
-    protected ProgressDialog progressDialog;
 
+    protected AppCompatEditText usernameEditText;
+    protected AppCompatEditText passwordEditText;
+    protected AppCompatButton loginButton;
+    protected AppCompatButton registerButton;
+    protected ProgressDialog progressDialog;
+    protected Toolbar toolbar;
     protected static final String TAG = "LoginActivity";
 }

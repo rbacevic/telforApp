@@ -30,4 +30,5 @@ dependencies {
     compile 'pl.charmas.android:android-reactive-location:0.8@aar'
     compile 'com.google.android.gms:play-services-location:8.1.0'
     compile 'org.jbundle.util.osgi.wrapped:org.jbundle.util.osgi.wrapped.org.apache.http.client:4.1.2'
+    compile 'com.android.support:cardview-v7:23.0.1'
 }

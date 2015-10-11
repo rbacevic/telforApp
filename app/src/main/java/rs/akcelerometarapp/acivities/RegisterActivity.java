@@ -1,12 +1,14 @@
 package rs.akcelerometarapp.acivities;
 
-import android.app.Activity;
+
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatButton;
+import android.support.v7.widget.AppCompatEditText;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import org.apache.http.NameValuePair;
@@ -22,7 +24,7 @@ import rs.akcelerometarapp.utils.ProgressDialogUtils;
 /**
  * Created by RADEEE on 09-Oct-15.
  */
-public class RegisterActivity extends Activity{
+public class RegisterActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,13 +38,16 @@ public class RegisterActivity extends Activity{
     protected void configUI() {
         progressDialog = ProgressDialogUtils.initProgressDialog(this);
 
-        usernameEditText = (EditText)findViewById(R.id.register_username);
-        passwordEditText = (EditText)findViewById(R.id.register_password);
-        repeatPasswordEditText = (EditText)findViewById(R.id.repeat_register_password);
-        nameEditText = (EditText)findViewById(R.id.register_name);
-        lastnameEditText = (EditText)findViewById(R.id.register_last_name);
-        emailEditText = (EditText)findViewById(R.id.register_email);
-        registerButton = (Button)findViewById(R.id.register_button);
+        usernameEditText = (AppCompatEditText)findViewById(R.id.register_username);
+        passwordEditText = (AppCompatEditText)findViewById(R.id.register_password);
+        repeatPasswordEditText = (AppCompatEditText)findViewById(R.id.repeat_register_password);
+        nameEditText = (AppCompatEditText)findViewById(R.id.register_name);
+        lastnameEditText = (AppCompatEditText)findViewById(R.id.register_last_name);
+        emailEditText = (AppCompatEditText)findViewById(R.id.register_email);
+        registerButton = (AppCompatButton)findViewById(R.id.register_button);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setHomeButtonEnabled(true);
     }
 
     protected void setAllListeners () {
@@ -162,14 +167,14 @@ public class RegisterActivity extends Activity{
 
     }
 
-    protected EditText usernameEditText;
-    protected EditText passwordEditText;
-    protected EditText repeatPasswordEditText;
-    protected EditText nameEditText;
-    protected EditText lastnameEditText;
-    protected EditText emailEditText;
-    protected Button registerButton;
+    protected AppCompatEditText usernameEditText;
+    protected AppCompatEditText passwordEditText;
+    protected AppCompatEditText repeatPasswordEditText;
+    protected AppCompatEditText nameEditText;
+    protected AppCompatEditText lastnameEditText;
+    protected AppCompatEditText emailEditText;
+    protected AppCompatButton registerButton;
     protected ProgressDialog progressDialog;
-
+    protected Toolbar toolbar;
     protected static final String TAG = "RegisterActivity";
 }
