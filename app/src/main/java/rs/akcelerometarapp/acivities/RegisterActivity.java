@@ -147,9 +147,10 @@ public class RegisterActivity extends AppCompatActivity {
             if(rezultatPovratna == 0) {
                 Toast.makeText(this, "Uspesna registracija", Toast.LENGTH_SHORT).show();
 
-                ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                /*ProgressDialogUtils.dismissProgressDialog(progressDialog);
                 Intent newIntent = new Intent(this, LoginActivity.class);
-                startActivity(newIntent);
+                startActivity(newIntent);*/
+                finish();
 
             } else if (rezultatPovratna == 1) {
                 ProgressDialogUtils.dismissProgressDialog(progressDialog);

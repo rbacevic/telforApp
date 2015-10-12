@@ -64,6 +64,7 @@ import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
 import rs.akcelerometarapp.network.dtos.URLS;
 import rs.akcelerometarapp.utils.KmlUtils;
+import rs.akcelerometarapp.utils.SessionManager;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
@@ -612,32 +613,34 @@ public class AccelerometerActivity extends AppCompatActivity {
             kmlElements = kmlElements + kmlelement;
         }
 
-        //posalji tacku na server
-        ArrayList<NameValuePair> postParameters = new ArrayList<>();
-        postParameters.add(new BasicNameValuePair("idK", userId));
-        postParameters.add(new BasicNameValuePair("idM", measurementId));
-        postParameters.add(new BasicNameValuePair("rmsX", String.valueOf(rmsX)));
-        postParameters.add(new BasicNameValuePair("rmsY", String.valueOf(rmsY)));
-        postParameters.add(new BasicNameValuePair("rmsZ", String.valueOf(rmsZ)));
-        postParameters.add(new BasicNameValuePair("aRms", String.valueOf(rmsXYZ)));
-        postParameters.add(new BasicNameValuePair("aPeak", String.valueOf(maxRmsXYZ)));
-        postParameters.add(new BasicNameValuePair("vreme", dateFormatted));
-        postParameters.add(new BasicNameValuePair("brzina", String.valueOf(speedInKmPerHour)));
-        postParameters.add(new BasicNameValuePair("longitude", String.valueOf(location.getLongitude())));
-        postParameters.add(new BasicNameValuePair("latitude", String.valueOf(location.getLatitude())));
-        //postParameters.add(new BasicNameValuePair("opis", measurementDescription));
+        if (!SessionManager.getInstance(this).isLocalUser()) {
+            //posalji tacku na server
+            ArrayList<NameValuePair> postParameters = new ArrayList<>();
+            postParameters.add(new BasicNameValuePair("idK", userId));
+            postParameters.add(new BasicNameValuePair("idM", measurementId));
+            postParameters.add(new BasicNameValuePair("rmsX", String.valueOf(rmsX)));
+            postParameters.add(new BasicNameValuePair("rmsY", String.valueOf(rmsY)));
+            postParameters.add(new BasicNameValuePair("rmsZ", String.valueOf(rmsZ)));
+            postParameters.add(new BasicNameValuePair("aRms", String.valueOf(rmsXYZ)));
+            postParameters.add(new BasicNameValuePair("aPeak", String.valueOf(maxRmsXYZ)));
+            postParameters.add(new BasicNameValuePair("vreme", dateFormatted));
+            postParameters.add(new BasicNameValuePair("brzina", String.valueOf(speedInKmPerHour)));
+            postParameters.add(new BasicNameValuePair("longitude", String.valueOf(location.getLongitude())));
+            postParameters.add(new BasicNameValuePair("latitude", String.valueOf(location.getLatitude())));
+            //postParameters.add(new BasicNameValuePair("opis", measurementDescription));
 
-        String response = null;
+            String response = null;
 
-        try {
+            try {
 
-            response = CustomHttpClient.executeHttpPost(URLS.AddPointURL(), postParameters);
-            String res = response.toString();
-            res = res.replaceAll("\\s+", "");
-            Log.d(TAG, res);
-        } catch (Exception e) {
-            Toast.makeText(this, "Greska prilikom slanja tacke na server", Toast.LENGTH_SHORT).show();
-            e.printStackTrace();
+                response = CustomHttpClient.executeHttpPost(URLS.AddPointURL(), postParameters);
+                String res = response.toString();
+                res = res.replaceAll("\\s+", "");
+                Log.d(TAG, res);
+            } catch (Exception e) {
+                Toast.makeText(this, "Greska prilikom slanja tacke na server", Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
+            }
         }
 
         kmlPointsCounter++;
@@ -645,28 +648,30 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     private void stopMeasurement() {
 
-        ArrayList<NameValuePair> postParameters = new ArrayList<>();
-        postParameters.add(new BasicNameValuePair("idM", measurementId));
-        postParameters.add(new BasicNameValuePair("idK", userId));
-        postParameters.add(new BasicNameValuePair("akcija", "stop"));
+        if (!SessionManager.getInstance(this).isLocalUser()) {
+            ArrayList<NameValuePair> postParameters = new ArrayList<>();
+            postParameters.add(new BasicNameValuePair("idM", measurementId));
+            postParameters.add(new BasicNameValuePair("idK", userId));
+            postParameters.add(new BasicNameValuePair("akcija", "stop"));
 
-        String response = null;
+            String response = null;
 
-        try {
+            try {
 
-            response = CustomHttpClient.executeHttpPost(URLS.StopMesurementURL(), postParameters);
-            String res = response.toString();
-            res= res.replaceAll("\\s+", "");
+                response = CustomHttpClient.executeHttpPost(URLS.StopMesurementURL(), postParameters);
+                String res = response.toString();
+                res= res.replaceAll("\\s+", "");
 
-            // Prebacivanje res u integer da bi moglo da se primeni u if-u
-            int rezultatPovratna = Integer.parseInt(res);
+                // Prebacivanje res u integer da bi moglo da se primeni u if-u
+                int rezultatPovratna = Integer.parseInt(res);
 
-            if(rezultatPovratna > 0){
-                Toast.makeText(this, "Merenje je uspesno sacuvano", Toast.LENGTH_SHORT).show();
+                if(rezultatPovratna > 0){
+                    Toast.makeText(this, "Merenje je uspesno sacuvano", Toast.LENGTH_SHORT).show();
+                }
+            } catch (Exception e) {
+                Toast.makeText(this, "Slaba konekcija sa internetom,pokusajte ponovo..", Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            Toast.makeText(this, "Slaba konekcija sa internetom,pokusajte ponovo..", Toast.LENGTH_SHORT).show();
-            e.printStackTrace();
         }
     }
 

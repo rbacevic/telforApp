@@ -1,7 +1,9 @@
 package rs.akcelerometarapp.acivities;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.StrictMode;
@@ -9,6 +11,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatButton;
 import android.support.v7.widget.AppCompatEditText;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -25,6 +29,7 @@ import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
 import rs.akcelerometarapp.network.dtos.URLS;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
+import rs.akcelerometarapp.utils.SessionManager;
 
 /**
  * Created by RADEEE on 10-Oct-15.
@@ -46,7 +51,53 @@ public class CreateNewMeasurement extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
+        showExitDialog();
+    }
+
+    DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+        @Override
+        public void onClick(DialogInterface dialog, int which) {
+            switch (which){
+                case DialogInterface.BUTTON_POSITIVE:
+                    Intent intent = new Intent(Intent.ACTION_MAIN);
+                    intent.addCategory(Intent.CATEGORY_HOME);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    break;
+
+                case DialogInterface.BUTTON_NEGATIVE:
+                    break;
+            }
+        }
+    };
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add(Menu.NONE, MENU_LOGOUT, Menu.NONE, R.string.logout_label).setIcon(
+                android.R.drawable.ic_menu_save);
+        menu.add(Menu.NONE, MENU_EXIT, Menu.NONE, R.string.exit_label).setIcon(
+                android.R.drawable.ic_menu_save);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(MENU_LOGOUT).setVisible(true);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case MENU_LOGOUT:
+                SessionManager.getInstance(getApplicationContext()).logoutUser();
+                finish();
+                break;
+            case MENU_EXIT:
+                showExitDialog();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     protected void configUI() {
@@ -60,13 +111,24 @@ public class CreateNewMeasurement extends AppCompatActivity {
         setSupportActionBar(toolbar);
     }
 
+    private void showExitDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Da li zelite da napustite aplikaciju?").setPositiveButton("Da", dialogClickListener)
+                .setNegativeButton("Ne", dialogClickListener).show();
+    }
+
     protected void collectData() {
 
-        Bundle bundle = getIntent().getExtras();
+        SessionManager sessionManager = SessionManager.getInstance(this);
+        if (sessionManager != null) {
+            userId = sessionManager.getKeyUserId();
+            username = sessionManager.getKeyUsername();
+        }
+        /*Bundle bundle = getIntent().getExtras();
         if (bundle != null) {
             userId = bundle.getString("id");
             username = bundle.getString("username");
-        }
+        }*/
         usernameTextView.setText(username);
     }
 
@@ -111,47 +173,60 @@ public class CreateNewMeasurement extends AppCompatActivity {
 
     protected void startMeasure(String measurementName) {
 
-        ProgressDialogUtils.showProgressDialog(progressDialog);
+        SessionManager sessionManager = SessionManager.getInstance(this);
 
-        ArrayList<NameValuePair> postParameters = new ArrayList<>();
-        postParameters.add(new BasicNameValuePair("naziv", measurementName));
-        postParameters.add(new BasicNameValuePair("idK", userId));
-        postParameters.add(new BasicNameValuePair("opis", measurementDescription.getText().toString()));
-        postParameters.add(new BasicNameValuePair("akcija", "start"));
+        if (sessionManager.isLocalUser()) {
+            Intent newIntent = new Intent(this, AccelerometerActivity.class);
+            Bundle bundle = new Bundle();
+            bundle.putString("userID", userId);
+            bundle.putString("measurementId", "test");
+            bundle.putString("opis", measurementDescription.getText().toString());
+            bundle.putBoolean("saveKML", saveKMLFile.isChecked());
+            newIntent.putExtras(bundle);
+            startActivity(newIntent);
+        } else {
+            ProgressDialogUtils.showProgressDialog(progressDialog);
 
-        String response = null;
+            ArrayList<NameValuePair> postParameters = new ArrayList<>();
+            postParameters.add(new BasicNameValuePair("naziv", measurementName));
+            postParameters.add(new BasicNameValuePair("idK", userId));
+            postParameters.add(new BasicNameValuePair("opis", measurementDescription.getText().toString()));
+            postParameters.add(new BasicNameValuePair("akcija", "start"));
 
-        try {
+            String response = null;
 
-            response = CustomHttpClient.executeHttpPost(URLS.CreateMesurementURL(), postParameters);
-            String res = response.toString();
-            res= res.replaceAll("\\s+", "");
+            try {
 
-            // Prebacivanje res u integer da bi moglo da se primeni u if-u
-            int rezultatPovratna = Integer.parseInt(res);
+                response = CustomHttpClient.executeHttpPost(URLS.CreateMesurementURL(), postParameters);
+                String res = response.toString();
+                res= res.replaceAll("\\s+", "");
 
-            if(rezultatPovratna > 0){
-                Toast.makeText(this, "Merenje je uspesno kreirano", Toast.LENGTH_SHORT).show();
+                // Prebacivanje res u integer da bi moglo da se primeni u if-u
+                int rezultatPovratna = Integer.parseInt(res);
 
+                if(rezultatPovratna > 0){
+                    Toast.makeText(this, "Merenje je uspesno kreirano", Toast.LENGTH_SHORT).show();
+
+                    ProgressDialogUtils.dismissProgressDialog(progressDialog);
+
+                    Intent newIntent = new Intent(this, AccelerometerActivity.class);
+                    Bundle bundle = new Bundle();
+                    bundle.putString("userID", userId);
+                    bundle.putString("measurementId", res);
+                    bundle.putString("opis", measurementDescription.getText().toString());
+                    bundle.putBoolean("saveKML", saveKMLFile.isChecked());
+                    newIntent.putExtras(bundle);
+                    startActivity(newIntent);
+
+                } else {
+                    ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                    Toast.makeText(this, "Doslo je do greske prilikom kreiranja merenja, molimo vas pokusajte ponovo", Toast.LENGTH_SHORT).show();
+                }
+            } catch (Exception e) {
                 ProgressDialogUtils.dismissProgressDialog(progressDialog);
-
-                Intent newIntent = new Intent(this, AccelerometerActivity.class);
-                Bundle bundle = new Bundle();
-                bundle.putString("userID", userId);
-                bundle.putString("measurementId", res);
-                bundle.putString("opis", measurementDescription.getText().toString());
-                bundle.putBoolean("saveKML", saveKMLFile.isChecked());
-                newIntent.putExtras(bundle);
-                startActivity(newIntent);
-
-            } else {
-                ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                Toast.makeText(this, "Doslo je do greske prilikom kreiranja merenja, molimo vas pokusajte ponovo", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Slaba konekcija sa internetom,pokusajte ponovo..", Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            ProgressDialogUtils.dismissProgressDialog(progressDialog);
-            Toast.makeText(this, "Slaba konekcija sa internetom,pokusajte ponovo..", Toast.LENGTH_SHORT).show();
-            e.printStackTrace();
         }
     }
 
@@ -164,5 +239,8 @@ public class CreateNewMeasurement extends AppCompatActivity {
     protected String userId;
     protected String username;
     protected Toolbar toolbar;
+    private static final int MENU_LOGOUT = (Menu.FIRST + 1);
+    private static final int MENU_EXIT = (Menu.FIRST + 2);
+
     protected static final String TAG = "CreateNewMeasurement";
 }

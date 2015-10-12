@@ -23,6 +23,7 @@ import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
 import rs.akcelerometarapp.network.dtos.URLS;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
+import rs.akcelerometarapp.utils.SessionManager;
 
 /**
  * Created by RADEEE on 07-Oct-15.
@@ -39,6 +40,11 @@ public class LoginActivity extends AppCompatActivity {
 
         configUI();
         setAllListeners();
+
+        if (SessionManager.getInstance(this).isLoggedIn()) {
+            Intent newIntent = new Intent(this, CreateNewMeasurement.class);
+            startActivity(newIntent);
+        }
     }
 
     protected void configUI() {
@@ -99,41 +105,50 @@ public class LoginActivity extends AppCompatActivity {
 
         ProgressDialogUtils.showProgressDialog(progressDialog);
 
-        ArrayList<NameValuePair> postParameters = new ArrayList<>();
-        postParameters.add(new BasicNameValuePair("username", username));
-        postParameters.add(new BasicNameValuePair("password", password));
-        postParameters.add(new BasicNameValuePair("akcija", "login"));
-
-        String response = null;
-
-        try {
-
-            response = CustomHttpClient.executeHttpPost(URLS.LoginURL(), postParameters);
-            String res=response.toString();
-            res= res.replaceAll("\\s+", "");
-
-            // Prebacivanje res u integer da bi moglo da se primeni u if-u
-            int rezultatPovratna = Integer.parseInt(res);
-
-            if(rezultatPovratna > 0){
-                Toast.makeText(this, "Uspesna verifikacija", Toast.LENGTH_SHORT).show();
-
-                ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                Intent newIntent = new Intent(this, CreateNewMeasurement.class);
-                Bundle bundle = new Bundle();
-                bundle.putString("id", res);
-                bundle.putString("username", username);
-                newIntent.putExtras(bundle);
-                startActivity(newIntent);
-
-            } else {
-                ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                Toast.makeText(this, "Pogresno korisnicko ime ili sifra", Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
+        if (username.equalsIgnoreCase("test") && password.equalsIgnoreCase("test")) {
             ProgressDialogUtils.dismissProgressDialog(progressDialog);
-            Toast.makeText(this, "Slaba konekcija sa internetom,pokusajte ponovo..", Toast.LENGTH_SHORT).show();
-            e.printStackTrace();
+            SessionManager.getInstance(this).createLoginSession(username, password, true);
+            Toast.makeText(this, "Ulogovani ste kao lokalni korisnik", Toast.LENGTH_SHORT).show();
+            Intent newIntent = new Intent(this, CreateNewMeasurement.class);
+            startActivity(newIntent);
+        } else {
+            ArrayList<NameValuePair> postParameters = new ArrayList<>();
+            postParameters.add(new BasicNameValuePair("username", username));
+            postParameters.add(new BasicNameValuePair("password", password));
+            postParameters.add(new BasicNameValuePair("akcija", "login"));
+
+            String response = null;
+
+            try {
+
+                response = CustomHttpClient.executeHttpPost(URLS.LoginURL(), postParameters);
+                String res=response.toString();
+                res= res.replaceAll("\\s+", "");
+
+                // Prebacivanje res u integer da bi moglo da se primeni u if-u
+                int rezultatPovratna = Integer.parseInt(res);
+
+                if(rezultatPovratna > 0){
+                    Toast.makeText(this, "Uspesna verifikacija", Toast.LENGTH_SHORT).show();
+
+                    ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                    SessionManager.getInstance(this).createLoginSession(username, res, false);
+                    Intent newIntent = new Intent(this, CreateNewMeasurement.class);
+                    /* Bundle bundle = new Bundle();
+                     bundle.putString("id", res);
+                      bundle.putString("username", username);
+                     newIntent.putExtras(bundle);*/
+                    startActivity(newIntent);
+
+                } else {
+                    ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                    Toast.makeText(this, "Pogresno korisnicko ime ili sifra", Toast.LENGTH_SHORT).show();
+                }
+            } catch (Exception e) {
+                ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                Toast.makeText(this, "Slaba konekcija sa internetom,pokusajte ponovo..", Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
+            }
         }
     }
 
