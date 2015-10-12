@@ -441,10 +441,10 @@ public class AccelerometerActivity extends AppCompatActivity {
         dialogBuilder.show();
     }
 
-    private double roundFourDecimals(double d)
+    private String roundFourDecimals(double d)
     {
         DecimalFormat twoDForm = new DecimalFormat("#.####");
-        return Double.valueOf(twoDForm.format(d));
+        return twoDForm.format(d);
     }
 
     //*********************************** Private Data *******************************************//
@@ -471,7 +471,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                     break;
             }
             mCurrents[angle] = value;
-            mAccValueViews[angle].setText(String.valueOf(roundFourDecimals(value)));
+            mAccValueViews[angle].setText(roundFourDecimals(value));
 
         }
 
@@ -500,7 +500,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                 break;
         }
         mCurrents[DATA_R] = fReal;
-        mAccValueViews[DATA_R].setText(String.valueOf(roundFourDecimals(fReal)));
+        mAccValueViews[DATA_R].setText(roundFourDecimals(fReal));
 
         //Log.d(TAG, "currents: " + mCurrents[0] + " " + mCurrents[1] + " " + mCurrents[2] + " " + mCurrents[3]);
         synchronized (this) {
