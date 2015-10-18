@@ -28,6 +28,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:gravity="start|center"
                     android:orientation="horizontal">
 
                     <CheckBox
@@ -77,6 +78,14 @@
                         android:id="@+id/accele_r_value"
                         style="@style/accele_value"
                         />
+
+                    <ImageView
+                        android:id="@+id/light_bulb_image"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginRight="5dp"
+                        android:src="@drawable/light_bulb_green"/>
 
                 </LinearLayout>
 

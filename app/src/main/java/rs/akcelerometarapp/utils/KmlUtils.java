@@ -31,7 +31,7 @@ public class KmlUtils {
     public static String createKMLPointString(String pointStyle, int pointIndex, double rmsX,
                                               double rmsY, double rmsZ, double rmsXYZ, double maxRmsXYZ,
                                               String dateFormatted, double speedInKmPerHour, double latitude,
-                                              double longitude, double altitude) {
+                                              double longitude, double altitude, double maxRmsX, double maxRmsY, double maxRmsZ) {
         return "\t<Placemark>\n" +
                 "<styleUrl>#" + pointStyle + "</styleUrl>"+
                 "\t<name>" + pointIndex + "</name>\n" +
@@ -41,6 +41,9 @@ public class KmlUtils {
                 "RMS X: " + rmsX + "\n" +
                 "RMS Y: " + rmsY + "\n" +
                 "RMS Z: " + rmsZ + "\n" +
+                "Max RMS X: " + maxRmsX + "\n" +
+                "Max RMS Y: " + maxRmsY + "\n" +
+                "Max RMS Z: " + maxRmsZ + "\n" +
                 "Max RMS XYZ: " + maxRmsXYZ + "\n" +
                 "RMS XYZ: " + rmsXYZ + "\n" +
                 "Time: " + dateFormatted + "\n" +

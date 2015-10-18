@@ -49,5 +49,13 @@
     <string name="measurement_name_missing">Niste uneli ime merenja</string>
     <string name="user_id_missing">Doslo je do greske, molimo vas ulogujte se ponovo</string>
     <string name="save_kml">Sacuvaj KML fajl</string>
+    <string name="save_raw">Sacuvaj CSV fajl</string>
+    <string name="unit_in_g">G</string>
+    <string name="metre_per_second_square">m/s^2</string>
+    <string name="horizontal">Horizontalan</string>
+    <string name="vertical">Vertikalan</string>
+    <string name="phone_orintation">Polozaj telefona:</string>
+    <string name="measure_unit">Merna jedinica:</string>
+    <string name="eleminate_near_ponts">Eleminisi tacke sa istom lokacijom</string>
 
 </resources>

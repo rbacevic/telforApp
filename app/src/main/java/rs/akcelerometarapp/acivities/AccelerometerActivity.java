@@ -33,6 +33,7 @@ import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -108,6 +109,10 @@ public class AccelerometerActivity extends AppCompatActivity {
             userId = bundle.getString("userID");
             measurementDescription = bundle.getString("opis");
             saveKMLFile = bundle.getBoolean("saveKML");
+            saveRAWFile = bundle.getBoolean("saveRaw");
+            eliminateNearPoints = bundle.getBoolean("eliminateNearPoints");
+            deviceOrientation = bundle.getInt("deviceOrientation");
+            measureUnit = bundle.getInt("measureUnit");
         }
 
         locationProvider = new ReactiveLocationProvider(getApplicationContext());
@@ -117,7 +122,6 @@ public class AccelerometerActivity extends AppCompatActivity {
         //zapocni snimanje
         mRecording = true;
         locationUpdatesObservable.subscribe();
-        lastRMSDate = new Date();
         mTempFilterList.clear();
         valueOfMaxRMS = 0;
         samplesCount = 0;
@@ -259,7 +263,9 @@ public class AccelerometerActivity extends AppCompatActivity {
                 break;
             case MENU_SAVE:
                 stopMeasurement();
-                saveHistory();
+                if (saveRAWFile || saveRAWFile) {
+                    saveHistory();
+                }
                 updatableLocationSubscription.unsubscribe();
                 finish();
                 break;
@@ -386,6 +392,8 @@ public class AccelerometerActivity extends AppCompatActivity {
                     }
                 });
 
+        lightBulbImageView = (ImageView)findViewById(R.id.light_bulb_image);
+
         //Rate filtera - Uzimanje vrednosti za TextView prikaz
         mFilterRateView = (TextView) findViewById(R.id.filter_rate_value);
         mFilterRateView.setText(String.valueOf(mFilterRate));
@@ -454,31 +462,38 @@ public class AccelerometerActivity extends AppCompatActivity {
         SensorEvent event = reactiveSensorEvent.getSensorEvent();
 
         for (int angle = 0; angle < 3; angle++) {
-            float value = event.values[angle];
+
+            int index = 0;
+            if (angle == 0) {
+                index = deviceOrientation == HORIZONTAL_DEVICE_ORIENTATION ? 0 : 2;
+            }
+
+            if (angle == 1) {
+                index = 1;
+            }
+            
+            if (angle == 2) {
+                index = deviceOrientation == HORIZONTAL_DEVICE_ORIENTATION ? 2 : 0;
+            }
+
+            float value = measureUnit == UNIT_IN_G ? event.values[index]/SensorManager.GRAVITY_EARTH : event.values[index];
 
             // Kreiranje low-pass filtera po formuli  aX = (x*0.1)+(ax*(1-0.1))
-            mLowPassFilters[angle] = (mLowPassFilters[angle] * (1 - mFilterRate))
+            mLowPassFilters[index] = (mLowPassFilters[index] * (1 - mFilterRate))
                     + (value * mFilterRate);
             // Filter
             switch (mPassFilter) {
                 case PASS_FILTER_LOW:
-                    value = mLowPassFilters[angle];
+                    value = mLowPassFilters[index];
                     break;
                     //High-pass filter po formuli aX = aX-((x*0.1)+(ax*(1-0.1)))
                 case PASS_FILTER_HIGH:
-                    value -= mLowPassFilters[angle];
-
+                    value -= mLowPassFilters[index];
                     break;
             }
+
             mCurrents[angle] = value;
             mAccValueViews[angle].setText(roundFourDecimals(value));
-
-        }
-
-        if (mRecording) {
-            mRawHistory.add(event.values.clone());    // dodavanje raw signala u listu
-            mFilterHistory.add(mCurrents.clone());    // dodavanje filtiranog signala u listu
-            mTempFilterList.add(mCurrents.clone());
         }
 
         // Izracunavanje vektora akceleracije R - osa
@@ -510,98 +525,158 @@ public class AccelerometerActivity extends AppCompatActivity {
             }
             mHistory.add(mCurrents.clone());
         }
-        double currentRmsXYZ = 0;
 
-        if (mRecording) {
+        double startRmsXYZ = (Math.abs(Math.sqrt(Math.pow(mCurrents[0], 2)
+                + Math.pow(mCurrents[1], 2)
+                + Math.pow(mCurrents[2], 2))));
+
+        if (startRmsXYZ < RMS_TRACEHOLD) {
+            if (!measureStarted) {
+                measureStarted = true;
+                lastRMSDate = new Date();
+                Log.d(TAG, "start measuring");
+            }
+            //lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_green));
+        } else {
+            //lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_red));
+        }
+
+        double currentRmsXYZ = 0;
+        if (mRecording && measureStarted) {
+
+            if (saveRAWFile) {
+                mRawHistory.add(event.values.clone());    // dodavanje raw signala u listu
+                mFilterHistory.add(mCurrents.clone());    // dodavanje filtiranog signala u listu
+            }
+            mTempFilterList.add(mCurrents.clone());
+
             currentRmsXYZ = (Math.abs(Math.sqrt(Math.pow(mCurrents[0], 2)
                     + Math.pow(mCurrents[1], 2)
                     + Math.pow(mCurrents[2], 2))));
             samplesCount++;
-        }
 
-        if (currentRmsXYZ > valueOfMaxRMS) {
-            valueOfMaxRMS = currentRmsXYZ;
-            updatableLocationSubscription = locationUpdatesObservable
-                    .subscribe(new Subscriber<Location>() {
-                        @Override
-                        public void onCompleted() {
+            if (currentRmsXYZ >= valueOfMaxRMS) {
+                valueOfMaxRMS = currentRmsXYZ;
+                updatableLocationSubscription = locationUpdatesObservable
+                        .subscribe(new Subscriber<Location>() {
+                            @Override
+                            public void onCompleted() {
 
-                        }
+                            }
 
-                        @Override
-                        public void onError(Throwable e) {
+                            @Override
+                            public void onError(Throwable e) {
 
-                        }
+                            }
 
-                        @Override
-                        public void onNext(Location location) {
-                            locationOfMaxRms=location;
-                        }
-                    });
-        }
+                            @Override
+                            public void onNext(Location location) {
 
-        //check last update time
-        long diff = -1;
-        if(lastRMSDate != null) {
-            diff = new Date().getTime() - lastRMSDate.getTime();
-        }
-
-        if(diff > TIME_INTERVAL_FOR_GETTING_RMS ) {
-            Iterator<float[]> iterator = mTempFilterList.iterator();
-
-            double rmsX = 0;
-            double rmsY = 0;
-            double rmsZ = 0;
-            double rmsXYZ = 0;
-
-            while (iterator.hasNext()) {
-
-                float[] values = iterator.next();
-
-                rmsX += Math.pow(values[0], 2);
-                rmsY += Math.pow(values[1], 2);
-                rmsZ += Math.pow(values[2], 2);
-                rmsXYZ += (Math.pow(values[0], 2)
-                        + Math.pow(values[1], 2)
-                        + Math.pow(values[2], 2));
+                                if (eliminateNearPoints && locationOfMaxRms != null) {
+                                    float distanceInMeters = locationOfMaxRms.distanceTo(location);
+                                    Log.d(TAG, "distance in meters" + distanceInMeters);
+                                    if (distanceInMeters > 3) {
+                                        locationOfMaxRms = location;
+                                        locationUpdated = true;
+                                    }
+                                } else {
+                                    locationOfMaxRms=location;
+                                    locationUpdated = true;
+                                }
+                            }
+                        });
             }
 
-            rmsX = Math.sqrt(rmsX / samplesCount);
-            rmsY = Math.sqrt(rmsY / samplesCount);
-            rmsZ = Math.sqrt(rmsZ / samplesCount);
-            rmsXYZ = Math.sqrt(rmsXYZ / samplesCount);
-
-            Date date = new Date(locationOfMaxRms.getTime());
-            java.text.DateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss:SSS");
-            String dateFormatted = dateFormatter.format(date);
-
-            Log.d(TAG, "RMS X: " + rmsX);
-            Log.d(TAG, "RMS Y: " + rmsY);
-            Log.d(TAG, "RMS Z: " + rmsZ);
-            Log.d(TAG, "Max RMS XYZ: " + valueOfMaxRMS);
-            Log.d(TAG, "RMS XYZ: " + rmsXYZ);
-            Log.d("latitude",locationOfMaxRms.getLatitude()+"");
-            Log.d("longitude",locationOfMaxRms.getLongitude()+"");
-            Log.d("time",dateFormatted+"");
-
-            if (rmsXYZ >= RMS_TRACEHOLD) {
-                createPoint("highlightPlacemark", locationOfMaxRms, rmsX,
-                        rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted);
-            } else {
-                createPoint("normalPlacemark", locationOfMaxRms, rmsX,
-                        rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted);
+            //check last update time
+            long diff = -1;
+            if(lastRMSDate != null && measureStarted) {
+                diff = new Date().getTime() - lastRMSDate.getTime();
             }
 
-            lastRMSDate = new Date();
-            mTempFilterList.clear();
-            valueOfMaxRMS = 0;
-            samplesCount++;
+            if(diff > TIME_INTERVAL_FOR_GETTING_RMS && locationUpdated) {
+                Iterator<float[]> iterator = mTempFilterList.iterator();
+
+                double rmsX = 0;
+                double rmsY = 0;
+                double rmsZ = 0;
+                double rmsXYZ = 0;
+                double maxRmsX = 0;
+                double maxRmsY = 0;
+                double maxRmsZ = 0;
+
+                while (iterator.hasNext()) {
+
+                    float[] values = iterator.next();
+
+                    //  double currentRMSX = Math.pow(values[0], 2);
+                    double currentApeakX = values[0];
+                    if (maxRmsX < currentApeakX) {
+                        maxRmsX = currentApeakX;
+                    }
+                    rmsX += Math.pow(currentApeakX, 2);
+
+                    double currentApeakY = values[1];
+                    if (maxRmsY < currentApeakY) {
+                        maxRmsY = currentApeakY;
+                    }
+                    rmsY += Math.pow(currentApeakY, 2);
+
+                    double currentApeakZ = values[2];
+                    if (maxRmsZ < currentApeakZ) {
+                        maxRmsZ = currentApeakZ;
+                    }
+                    rmsZ += Math.pow(currentApeakZ, 2);
+
+                    rmsXYZ += (Math.pow(values[0], 2)
+                            + Math.pow(values[1], 2)
+                            + Math.pow(values[2], 2));
+                }
+
+                rmsX = Math.sqrt(rmsX / samplesCount);
+                rmsY = Math.sqrt(rmsY / samplesCount);
+                rmsZ = Math.sqrt(rmsZ / samplesCount);
+                rmsXYZ = Math.sqrt(rmsXYZ / samplesCount);
+
+                Date date = new Date(locationOfMaxRms.getTime());
+                java.text.DateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss:SSS");
+                String dateFormatted = dateFormatter.format(date);
+
+                Log.d(TAG, "RMS X: " + rmsX);
+                Log.d(TAG, "RMS Y: " + rmsY);
+                Log.d(TAG, "RMS Z: " + rmsZ);
+                Log.d(TAG, "Max RMS X: " + maxRmsX);
+                Log.d(TAG, "Max RMS Y: " + maxRmsY);
+                Log.d(TAG, "Max RMS Z: " + maxRmsZ);
+                Log.d(TAG, "Max RMS XYZ: " + valueOfMaxRMS);
+                Log.d(TAG, "RMS XYZ: " + rmsXYZ);
+                Log.d("latitude",locationOfMaxRms.getLatitude()+"");
+                Log.d("longitude",locationOfMaxRms.getLongitude()+"");
+                Log.d("time",dateFormatted+"");
+
+                if (rmsXYZ >= RMS_TRACEHOLD) {
+                    createPoint("highlightPlacemark", locationOfMaxRms, rmsX,
+                            rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted,
+                            maxRmsX, maxRmsY, maxRmsZ);
+                    lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_red));
+                } else {
+                    createPoint("normalPlacemark", locationOfMaxRms, rmsX,
+                            rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted,
+                            maxRmsX, maxRmsY, maxRmsZ);
+                    lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_green));
+                }
+
+                lastRMSDate = new Date();
+                mTempFilterList.clear();
+                valueOfMaxRMS = 0;
+                samplesCount++;
+                locationUpdated = false;
+            }
         }
     }
 
     private void createPoint(String pointStyle, Location location, double rmsX,
                              double rmsY, double rmsZ, double rmsXYZ, double maxRmsXYZ,
-                             String dateFormatted) {
+                             String dateFormatted,  double maxRmsX, double maxRmsY, double maxRmsZ) {
 
         double speedInKmPerHour = (location.getSpeed() * 3600) / 1000;
 
@@ -609,7 +684,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         if (saveKMLFile) {
             String kmlelement = KmlUtils.createKMLPointString(pointStyle, kmlPointsCounter, rmsX, rmsY,
                     rmsZ,rmsXYZ, maxRmsXYZ,dateFormatted, speedInKmPerHour, location.getLatitude(),
-                    location.getLongitude(), location.getAltitude());
+                    location.getLongitude(), location.getAltitude(), maxRmsX, maxRmsY, maxRmsZ);
             kmlElements = kmlElements + kmlelement;
         }
 
@@ -621,6 +696,9 @@ public class AccelerometerActivity extends AppCompatActivity {
             postParameters.add(new BasicNameValuePair("rmsX", String.valueOf(rmsX)));
             postParameters.add(new BasicNameValuePair("rmsY", String.valueOf(rmsY)));
             postParameters.add(new BasicNameValuePair("rmsZ", String.valueOf(rmsZ)));
+            /*postParameters.add(new BasicNameValuePair("maxRmsX", String.valueOf(maxRmsX)));
+            postParameters.add(new BasicNameValuePair("maxRmsY", String.valueOf(maxRmsY)));
+            postParameters.add(new BasicNameValuePair("maxRmsZ", String.valueOf(maxRmsZ)));*/
             postParameters.add(new BasicNameValuePair("aRms", String.valueOf(rmsXYZ)));
             postParameters.add(new BasicNameValuePair("aPeak", String.valueOf(maxRmsXYZ)));
             postParameters.add(new BasicNameValuePair("vreme", dateFormatted));
@@ -951,43 +1029,46 @@ public class AccelerometerActivity extends AppCompatActivity {
                 kmlContent = kmlContent + KmlUtils.getKMLEndString();
             }
 
-            // Kreiranje datoteke u CSV formatu
-            StringBuilder csvData = new StringBuilder();
-            // Iterator za ConcurrentLinkedQueue<float[]> mRawHistory
-           // Iterator<float[]> iteratorpom = mHistory.iterator();            // uvek ima 230 odmeraka,LOSE, pomocna lista, NE KORISTI SE
-            Iterator<float[]> iterator = mFilterHistory.iterator();
-            Iterator<float[]> iteratorRaw = mRawHistory.iterator();
+            StringBuilder csvData = null;
+            if (saveRAWFile) {
+                // Kreiranje datoteke u CSV formatu
+                csvData = new StringBuilder();
+                // Iterator za ConcurrentLinkedQueue<float[]> mRawHistory
+                // Iterator<float[]> iteratorpom = mHistory.iterator();            // uvek ima 230 odmeraka,LOSE, pomocna lista, NE KORISTI SE
+                Iterator<float[]> iterator = mFilterHistory.iterator();
+                Iterator<float[]> iteratorRaw = mRawHistory.iterator();
 
-            // sinhonizacija listi da se poklapaju podaci na grafiku, sad mozda i ne treba
-            int n = mHistory.size();
-            int nRaw = mRawHistory.size();
-            // pomera se filtrirana lista
-            for (int i = 0; i < n - nRaw; i++)
-                iterator.next();
-            // kraj sinhonizacije
+                // sinhonizacija listi da se poklapaju podaci na grafiku, sad mozda i ne treba
+                int n = mHistory.size();
+                int nRaw = mRawHistory.size();
+                // pomera se filtrirana lista
+                for (int i = 0; i < n - nRaw; i++)
+                    iterator.next();
+                // kraj sinhonizacije
 
-            //Iteracija kroz strukturu i formatiranje izvestaja sa zarezom i novim redom
-            while (iterator.hasNext() && iteratorRaw.hasNext()) {
-                float[] values = iterator.next();
-                float[] valuesRaw = iteratorRaw.next();
-                for (int angle = 0; angle < 3; angle++) {
-                    csvData.append(String.valueOf(values[angle]));
-                    if (angle < 3) {
-                        csvData.append(",");
+                //Iteracija kroz strukturu i formatiranje izvestaja sa zarezom i novim redom
+                while (iterator.hasNext() && iteratorRaw.hasNext()) {
+                    float[] values = iterator.next();
+                    float[] valuesRaw = iteratorRaw.next();
+                    for (int angle = 0; angle < 3; angle++) {
+                        csvData.append(String.valueOf(values[angle]));
+                        if (angle < 3) {
+                            csvData.append(",");
+                        }
                     }
-                }
-                for (int angle = 0; angle < 3; angle++) {
-                    csvData.append(String.valueOf(valuesRaw[angle]));
-                    if (angle < 3) {
-                        csvData.append(",");
+                    for (int angle = 0; angle < 3; angle++) {
+                        csvData.append(String.valueOf(valuesRaw[angle]));
+                        if (angle < 3) {
+                            csvData.append(",");
+                        }
                     }
+                    csvData.append("\n");
                 }
-                csvData.append("\n");
+//			    csvData.append(String.valueOf(mFilterHistory.size()));	// velicina filtirane liste
+//		       	csvData.append("\n");
+//			    csvData.append(String.valueOf(mRawHistory.size()));		// velicina raw liste
+//			    csvData.append("\n");
             }
-//			csvData.append(String.valueOf(mFilterHistory.size()));	// velicina filtirane liste
-//			csvData.append("\n");
-//			csvData.append(String.valueOf(mRawHistory.size()));		// velicina raw liste
-//			csvData.append("\n");
 
             // Priprema za Poruku
             Message msg = new Message();
@@ -1004,17 +1085,19 @@ public class AccelerometerActivity extends AppCompatActivity {
                 }
 
                 // Snimanje u CSV datoteku
-                String fileName = DateFormat
-                        .format("yyyy-MM-dd-kk-mm-ss",
-                                System.currentTimeMillis()).toString()
-                        .concat(".csv");
-                File file = new File(dirPath, fileName);
-                if (file.createNewFile()) {
-                    FileOutputStream fileOutputStream = new FileOutputStream(
-                            file);
-                    // Unos podataka
-                    fileOutputStream.write(csvData.toString().getBytes());
-                    fileOutputStream.close();
+                if (saveRAWFile && csvData != null) {
+                    String fileName = DateFormat
+                            .format("yyyy-MM-dd-kk-mm-ss",
+                                    System.currentTimeMillis()).toString()
+                            .concat(".csv");
+                    File file = new File(dirPath, fileName);
+                    if (file.createNewFile()) {
+                        FileOutputStream fileOutputStream = new FileOutputStream(
+                                file);
+                        // Unos podataka
+                        fileOutputStream.write(csvData.toString().getBytes());
+                        fileOutputStream.close();
+                    }
                 }
 
                 //Snimanje u kml datoteku
@@ -1093,6 +1176,7 @@ public class AccelerometerActivity extends AppCompatActivity {
             if (data.getBoolean("success")) {
                 // Inicijalizacija RAW history-a
                 mRawHistory = new ConcurrentLinkedQueue<>();
+                mFilterHistory = new ConcurrentLinkedQueue<>();
             }
 
             Toast.makeText(AccelerometerActivity.this, data.getString("msg"),
@@ -1119,6 +1203,10 @@ public class AccelerometerActivity extends AppCompatActivity {
     private static final int DIALOG_SAVE_PROGRESS = 0;
 
     private static final double RMS_TRACEHOLD = 0.315;
+    private static final int UNIT_IN_G = 0;
+    private static final int UNIT_IN_METRE_PER_SECOND_SQUARE = 1;
+    private static final int HORIZONTAL_DEVICE_ORIENTATION = 0;
+    private static final int VERICAL_DEVICE_ORIENTATION = 1;
 
     private float[] mCurrents = new float[4];
     private ConcurrentLinkedQueue<float[]> mHistory = new ConcurrentLinkedQueue<>();
@@ -1139,8 +1227,10 @@ public class AccelerometerActivity extends AppCompatActivity {
     private GraphView mGraphView;
     private TextView mFilterRateView;
     private RadioGroup passFilterGroup;
+    private ImageView lightBulbImageView;
 
     private boolean saveKMLFile = false;
+    private boolean saveRAWFile = false;
     private String kmlElements;
     private int kmlPointsCounter = 1;
 
@@ -1151,7 +1241,13 @@ public class AccelerometerActivity extends AppCompatActivity {
     // The minimum time between updates in milliseconds
     private static final long TIME_INTERVAL_FOR_GETTING_RMS = 10 * 1000; // 10 seconds
     private Date lastRMSDate;
+    private boolean eliminateNearPoints;
+    private boolean locationUpdated;
+
+    private boolean measureStarted = false;
     private int samplesCount = 0;
+    private int measureUnit = UNIT_IN_G;
+    private int deviceOrientation = HORIZONTAL_DEVICE_ORIENTATION;
 
     // Kasnjenje podataka predefinisan za pocetak rada na SENSOR_DELAY_UI
     // Kroz implementiranu logiku moguce ga je prome u meniju kasnije

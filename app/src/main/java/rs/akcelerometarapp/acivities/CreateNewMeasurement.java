@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
@@ -17,6 +18,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -107,8 +109,16 @@ public class CreateNewMeasurement extends AppCompatActivity {
         measurementDescription = (AppCompatEditText)findViewById(R.id.measurement_description);
         startMeasurement = (AppCompatButton)findViewById(R.id.start_measurement);
         saveKMLFile = (CheckBox)findViewById(R.id.save_kml_file);
+        saveKMLFile.setChecked(true);
+        saveRawFile = (CheckBox)findViewById(R.id.save_raw_file);
+        saveRawFile.setChecked(false);
+        eliminateNearPoints = (CheckBox)findViewById(R.id.eleminate_near_points);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        unitsRadioGroup = (RadioGroup) findViewById(R.id.measure_unit);
+        unitsRadioGroup.check(R.id.unit_in_g);
+        deviceOrientationRadioGroup = (RadioGroup) findViewById(R.id.phone_orientation);
+        deviceOrientationRadioGroup.check(R.id.horizontal_phone_orientation);
     }
 
     private void showExitDialog() {
@@ -137,11 +147,12 @@ public class CreateNewMeasurement extends AppCompatActivity {
         super.onResume();
         measurementName.setText("");
         measurementDescription.setText("");
-        saveKMLFile.setChecked(false);
     }
 
     protected void setAllListeners () {
         startMeasurement.setOnClickListener(startMeasurementClickListener);
+        unitsRadioGroup.setOnCheckedChangeListener(unitChanged);
+        deviceOrientationRadioGroup.setOnCheckedChangeListener(phoneOrientationChanged);
     }
 
     protected boolean validateFields() {
@@ -171,6 +182,34 @@ public class CreateNewMeasurement extends AppCompatActivity {
         }
     };
 
+    RadioGroup.OnCheckedChangeListener unitChanged = new RadioGroup.OnCheckedChangeListener() {
+        @Override
+        public void onCheckedChanged(RadioGroup group, int checkedId) {
+            switch (checkedId) {
+                case R.id.unit_in_g:
+                    measureUnit = UNIT_IN_G;
+                    break;
+                case R.id.unit_in_metre_per_seconds_square:
+                    measureUnit = UNIT_IN_METRE_PER_SECOND_SQUARE;
+                    break;
+            }
+        }
+    };
+
+    RadioGroup.OnCheckedChangeListener phoneOrientationChanged = new RadioGroup.OnCheckedChangeListener() {
+        @Override
+        public void onCheckedChanged(RadioGroup group, int checkedId) {
+            switch (checkedId) {
+                case R.id.horizontal_phone_orientation:
+                    deviceOrientation = HORIZONTAL_DEVICE_ORIENTATION;
+                    break;
+                case R.id.vertical_phone_orientation:
+                    deviceOrientation = VERICAL_DEVICE_ORIENTATION;
+                    break;
+            }
+        }
+    };
+
     protected void startMeasure(String measurementName) {
 
         SessionManager sessionManager = SessionManager.getInstance(this);
@@ -182,6 +221,10 @@ public class CreateNewMeasurement extends AppCompatActivity {
             bundle.putString("measurementId", "test");
             bundle.putString("opis", measurementDescription.getText().toString());
             bundle.putBoolean("saveKML", saveKMLFile.isChecked());
+            bundle.putBoolean("saveRaw", saveRawFile.isChecked());
+            bundle.putBoolean("eliminateNearPoints", eliminateNearPoints.isChecked());
+            bundle.putInt("deviceOrientation", deviceOrientation);
+            bundle.putInt("measureUnit", measureUnit);
             newIntent.putExtras(bundle);
             startActivity(newIntent);
         } else {
@@ -215,6 +258,10 @@ public class CreateNewMeasurement extends AppCompatActivity {
                     bundle.putString("measurementId", res);
                     bundle.putString("opis", measurementDescription.getText().toString());
                     bundle.putBoolean("saveKML", saveKMLFile.isChecked());
+                    bundle.putBoolean("saveRaw", saveRawFile.isChecked());
+                    bundle.putBoolean("eliminateNearPoints", eliminateNearPoints.isChecked());
+                    bundle.putInt("deviceOrientation", deviceOrientation);
+                    bundle.putInt("measureUnit", measureUnit);
                     newIntent.putExtras(bundle);
                     startActivity(newIntent);
 
@@ -234,6 +281,12 @@ public class CreateNewMeasurement extends AppCompatActivity {
     protected AppCompatEditText measurementDescription;
     protected TextView usernameTextView;
     protected CheckBox saveKMLFile;
+    protected CheckBox saveRawFile;
+    protected CheckBox eliminateNearPoints;
+    protected RadioGroup unitsRadioGroup;
+    protected RadioGroup deviceOrientationRadioGroup;
+    private int measureUnit = UNIT_IN_G;
+    private int deviceOrientation = HORIZONTAL_DEVICE_ORIENTATION;
     protected AppCompatButton startMeasurement;
     protected ProgressDialog progressDialog;
     protected String userId;
@@ -242,5 +295,9 @@ public class CreateNewMeasurement extends AppCompatActivity {
     private static final int MENU_LOGOUT = (Menu.FIRST + 1);
     private static final int MENU_EXIT = (Menu.FIRST + 2);
 
+    private static final int UNIT_IN_G = 0;
+    private static final int UNIT_IN_METRE_PER_SECOND_SQUARE = 1;
+    private static final int HORIZONTAL_DEVICE_ORIENTATION = 0;
+    private static final int VERICAL_DEVICE_ORIENTATION = 1;
     protected static final String TAG = "CreateNewMeasurement";
 }
