@@ -5,13 +5,13 @@ package rs.akcelerometarapp.utils;
  */
 public class KmlUtils {
 
-    public static String getKMLStartString() {
+    public static String getKMLStartString(String name, String description) {
 
         return  "<?xml version='1.0' encoding='UTF-8'?>\n" +
                 "<kml xmlns='http://www.opengis.net/kml/2.2'>\n" +
                 "<Document>\n" +
-                "<name>TEST DRIVE</name> \n"+
-                "<description>DCR</description> \n"+
+                "<name>"+ name +"</name> \n"+
+                "<description>" + description + "</description> \n"+
                 "<Style id='highlightPlacemark'> \n"+
                 "<IconStyle> \n"+
                 "<Icon> \n"+

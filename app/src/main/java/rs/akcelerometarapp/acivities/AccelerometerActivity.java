@@ -20,6 +20,7 @@ import android.os.Message;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Html;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -97,8 +98,6 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         // Setovanje layouta
         setContentView(R.layout.activity_main);
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
         // Setovanje UI
         configureUI();
@@ -110,10 +109,35 @@ public class AccelerometerActivity extends AppCompatActivity {
             measurementDescription = bundle.getString("opis");
             saveKMLFile = bundle.getBoolean("saveKML");
             saveRAWFile = bundle.getBoolean("saveRaw");
-            eliminateNearPoints = bundle.getBoolean("eliminateNearPoints");
+            minDistanceBetweenTwoPoints = bundle.getInt("eliminateNearPoints");
+            minTimeBetweenTwoPoints = bundle.getInt("timeBetweenPoints") * 1000;
             deviceOrientation = bundle.getInt("deviceOrientation");
             measureUnit = bundle.getInt("measureUnit");
+            measurementName = bundle.getString("imeMerenja");
         }
+
+        String username = SessionManager.getInstance(this).getKeyUsername();
+        String unit = measureUnit == 0 ? "G" : "m/s^2";
+        String deviceOrient = deviceOrientation == 0 ? "H" : "V";
+        String saveFile = "";
+
+        if (saveKMLFile) {
+            saveFile = "KML";
+        }
+
+        if (saveRAWFile) {
+            if (saveFile.length() > 0) {
+                saveFile = saveFile + " i CSV";
+            } else {
+                saveFile = "CSV";
+            }
+        }
+
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        String title = getResources().getString(R.string.app_name) + " - " + username + " / " + saveFile + " / "
+                + unit + " / " + deviceOrient + " / " + minTimeBetweenTwoPoints/1000 + "s / " + minDistanceBetweenTwoPoints + "m";
+        toolbar.setTitle(title);
+        setSupportActionBar(toolbar);
 
         locationProvider = new ReactiveLocationProvider(getApplicationContext());
         locationRequest = locationRequest();
@@ -393,6 +417,8 @@ public class AccelerometerActivity extends AppCompatActivity {
                 });
 
         lightBulbImageView = (ImageView)findViewById(R.id.light_bulb_image);
+        rmsTextView = (TextView)findViewById(R.id.rms_value);
+        rmsTextView.setText("RMS: 0.00");
 
         //Rate filtera - Uzimanje vrednosti za TextView prikaz
         mFilterRateView = (TextView) findViewById(R.id.filter_rate_value);
@@ -455,6 +481,12 @@ public class AccelerometerActivity extends AppCompatActivity {
         return twoDForm.format(d);
     }
 
+    private String roundTwoDecimals(double d)
+    {
+        DecimalFormat twoDForm = new DecimalFormat("#.##");
+        return twoDForm.format(d);
+    }
+
     //*********************************** Private Data *******************************************//
 
     private void calculateRMS(ReactiveSensorEvent reactiveSensorEvent) {
@@ -464,16 +496,16 @@ public class AccelerometerActivity extends AppCompatActivity {
         for (int angle = 0; angle < 3; angle++) {
 
             int index = 0;
-            if (angle == 0) {
-                index = deviceOrientation == HORIZONTAL_DEVICE_ORIENTATION ? 0 : 2;
+            if (angle == DATA_X) {
+                index = deviceOrientation == HORIZONTAL_DEVICE_ORIENTATION ? DATA_X : DATA_Z;
             }
 
-            if (angle == 1) {
-                index = 1;
+            if (angle == DATA_Y) {
+                index = DATA_Y;
             }
             
-            if (angle == 2) {
-                index = deviceOrientation == HORIZONTAL_DEVICE_ORIENTATION ? 2 : 0;
+            if (angle == DATA_Z) {
+                index = deviceOrientation == HORIZONTAL_DEVICE_ORIENTATION ? DATA_Z : DATA_X;
             }
 
             float value = measureUnit == UNIT_IN_G ? event.values[index]/SensorManager.GRAVITY_EARTH : event.values[index];
@@ -497,9 +529,9 @@ public class AccelerometerActivity extends AppCompatActivity {
         }
 
         // Izracunavanje vektora akceleracije R - osa
-        Double dReal = Math.abs(Math.sqrt(Math.pow(event.values[DATA_X], 2)
-                + Math.pow(event.values[DATA_Y], 2)
-                + Math.pow(event.values[DATA_Z], 2)));
+        Double dReal = Math.abs(Math.sqrt(Math.pow(mCurrents[DATA_X], 2)
+                + Math.pow(mCurrents[DATA_Y], 2)
+                + Math.pow(mCurrents[DATA_Z], 2)));
         fReal = dReal.floatValue();
 
         // Kreiranje low-pass filtera
@@ -535,6 +567,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                 measureStarted = true;
                 lastRMSDate = new Date();
                 Log.d(TAG, "start measuring");
+                Toast.makeText(this, "Uredjaj kalibirsan, pocinje merenje !!!", Toast.LENGTH_LONG).show();
             }
             //lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_green));
         } else {
@@ -572,10 +605,10 @@ public class AccelerometerActivity extends AppCompatActivity {
                             @Override
                             public void onNext(Location location) {
 
-                                if (eliminateNearPoints && locationOfMaxRms != null) {
+                                if (locationOfMaxRms != null) {
                                     float distanceInMeters = locationOfMaxRms.distanceTo(location);
                                     Log.d(TAG, "distance in meters" + distanceInMeters);
-                                    if (distanceInMeters > 3) {
+                                    if (distanceInMeters > minDistanceBetweenTwoPoints) {
                                         locationOfMaxRms = location;
                                         locationUpdated = true;
                                     }
@@ -593,7 +626,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                 diff = new Date().getTime() - lastRMSDate.getTime();
             }
 
-            if(diff > TIME_INTERVAL_FOR_GETTING_RMS && locationUpdated) {
+            if(diff > minTimeBetweenTwoPoints && locationUpdated) {
                 Iterator<float[]> iterator = mTempFilterList.iterator();
 
                 double rmsX = 0;
@@ -636,6 +669,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                 rmsY = Math.sqrt(rmsY / samplesCount);
                 rmsZ = Math.sqrt(rmsZ / samplesCount);
                 rmsXYZ = Math.sqrt(rmsXYZ / samplesCount);
+                Log.d("samples count ", "" + samplesCount);
 
                 Date date = new Date(locationOfMaxRms.getTime());
                 java.text.DateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss:SSS");
@@ -653,22 +687,28 @@ public class AccelerometerActivity extends AppCompatActivity {
                 Log.d("longitude",locationOfMaxRms.getLongitude()+"");
                 Log.d("time",dateFormatted+"");
 
+                rmsTextView.setText("RMS: " + roundTwoDecimals(rmsX));
+
                 if (rmsXYZ >= RMS_TRACEHOLD) {
                     createPoint("highlightPlacemark", locationOfMaxRms, rmsX,
                             rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted,
                             maxRmsX, maxRmsY, maxRmsZ);
                     lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_red));
+                    String text = "Snimljena <font color='red'>NEUDOBNA</font> tacka !!!";
+                    Toast.makeText(this, Html.fromHtml(text), Toast.LENGTH_SHORT).show();
                 } else {
                     createPoint("normalPlacemark", locationOfMaxRms, rmsX,
                             rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted,
                             maxRmsX, maxRmsY, maxRmsZ);
                     lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_green));
+                    String text = "Snimljena <font color='green'>UDOBNA</font> tacka !!!";
+                    Toast.makeText(this, Html.fromHtml(text), Toast.LENGTH_SHORT).show();
                 }
 
                 lastRMSDate = new Date();
                 mTempFilterList.clear();
                 valueOfMaxRMS = 0;
-                samplesCount++;
+                samplesCount = 0;
                 locationUpdated = false;
             }
         }
@@ -1024,7 +1064,29 @@ public class AccelerometerActivity extends AppCompatActivity {
             //KML file
             String kmlContent = null;
             if (saveKMLFile) {
-                kmlContent = KmlUtils.getKMLStartString();
+
+                String username = SessionManager.getInstance(AccelerometerActivity.this).getKeyUsername();
+                String unit = measureUnit == 0 ? "G" : "m/s^2";
+                String deviceOrient = deviceOrientation == 0 ? "H" : "V";
+                String saveFile = "";
+
+                if (saveKMLFile) {
+                    saveFile = "KML";
+                }
+
+                if (saveRAWFile) {
+                    if (saveFile.length() > 0) {
+                        saveFile = saveFile + " i CSV";
+                    } else {
+                        saveFile = "CSV";
+                    }
+                }
+
+                String desc = "User: " + username + "\njedinica: " + unit + "\npolozaj uredjaja: " + deviceOrient +
+                        "\nformati: " + saveFile + "\nminimalna distanca izmedju dve tacke: " + minDistanceBetweenTwoPoints + "m" +
+                        "\nminimalno vreme izmedju dve tacke: " + minTimeBetweenTwoPoints/1000 + "s";
+
+                kmlContent = KmlUtils.getKMLStartString(measurementName, desc);
                 kmlContent = kmlContent + kmlElements;
                 kmlContent = kmlContent + KmlUtils.getKMLEndString();
             }
@@ -1228,6 +1290,7 @@ public class AccelerometerActivity extends AppCompatActivity {
     private TextView mFilterRateView;
     private RadioGroup passFilterGroup;
     private ImageView lightBulbImageView;
+    private TextView rmsTextView;
 
     private boolean saveKMLFile = false;
     private boolean saveRAWFile = false;
@@ -1237,11 +1300,13 @@ public class AccelerometerActivity extends AppCompatActivity {
     private String measurementId;
     private String userId;
     private String measurementDescription;
+    private String measurementName;
 
     // The minimum time between updates in milliseconds
-    private static final long TIME_INTERVAL_FOR_GETTING_RMS = 10 * 1000; // 10 seconds
+   // private static final long TIME_INTERVAL_FOR_GETTING_RMS = 10 * 1000; // 10 seconds
     private Date lastRMSDate;
-    private boolean eliminateNearPoints;
+    private int minDistanceBetweenTwoPoints;
+    private long minTimeBetweenTwoPoints;
     private boolean locationUpdated;
 
     private boolean measureStarted = false;

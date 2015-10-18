@@ -87,6 +87,11 @@
                         android:layout_marginRight="5dp"
                         android:src="@drawable/light_bulb_green"/>
 
+                    <TextView
+                        android:id="@+id/rms_value"
+                        style="@style/accele_value"
+                        />
+
                 </LinearLayout>
 
                 <LinearLayout

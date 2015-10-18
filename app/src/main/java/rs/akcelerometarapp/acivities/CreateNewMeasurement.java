@@ -112,11 +112,12 @@ public class CreateNewMeasurement extends AppCompatActivity {
         saveKMLFile.setChecked(true);
         saveRawFile = (CheckBox)findViewById(R.id.save_raw_file);
         saveRawFile.setChecked(false);
-        eliminateNearPoints = (CheckBox)findViewById(R.id.eleminate_near_points);
+        eliminateNearPoints = (AppCompatEditText)findViewById(R.id.eliminate_points_in_radius);
+        timeBetweenPoints = (AppCompatEditText)findViewById(R.id.time_between_points);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         unitsRadioGroup = (RadioGroup) findViewById(R.id.measure_unit);
-        unitsRadioGroup.check(R.id.unit_in_g);
+        unitsRadioGroup.check(R.id.unit_in_metre_per_seconds_square);
         deviceOrientationRadioGroup = (RadioGroup) findViewById(R.id.phone_orientation);
         deviceOrientationRadioGroup.check(R.id.horizontal_phone_orientation);
     }
@@ -158,9 +159,21 @@ public class CreateNewMeasurement extends AppCompatActivity {
     protected boolean validateFields() {
 
         String name = measurementName.getText().toString();
+        String distance = eliminateNearPoints.getText().toString();
+        String time = timeBetweenPoints.getText().toString();
 
         if (name == null || name.length() == 0) {
             Toast.makeText(this, getString(R.string.measurement_name_missing), Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (distance == null || distance.length() == 0) {
+            Toast.makeText(this, getString(R.string.field_missing), Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (time == null || time.length() == 0) {
+            Toast.makeText(this, getString(R.string.field_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
 
@@ -220,9 +233,11 @@ public class CreateNewMeasurement extends AppCompatActivity {
             bundle.putString("userID", userId);
             bundle.putString("measurementId", "test");
             bundle.putString("opis", measurementDescription.getText().toString());
+            bundle.putString("imeMerenja", measurementName);
             bundle.putBoolean("saveKML", saveKMLFile.isChecked());
             bundle.putBoolean("saveRaw", saveRawFile.isChecked());
-            bundle.putBoolean("eliminateNearPoints", eliminateNearPoints.isChecked());
+            bundle.putInt("eliminateNearPoints", Integer.valueOf(eliminateNearPoints.getText().toString()));
+            bundle.putInt("timeBetweenPoints", Integer.valueOf(timeBetweenPoints.getText().toString()));
             bundle.putInt("deviceOrientation", deviceOrientation);
             bundle.putInt("measureUnit", measureUnit);
             newIntent.putExtras(bundle);
@@ -257,9 +272,11 @@ public class CreateNewMeasurement extends AppCompatActivity {
                     bundle.putString("userID", userId);
                     bundle.putString("measurementId", res);
                     bundle.putString("opis", measurementDescription.getText().toString());
+                    bundle.putString("imeMerenja", measurementName);
                     bundle.putBoolean("saveKML", saveKMLFile.isChecked());
                     bundle.putBoolean("saveRaw", saveRawFile.isChecked());
-                    bundle.putBoolean("eliminateNearPoints", eliminateNearPoints.isChecked());
+                    bundle.putInt("eliminateNearPoints", Integer.valueOf(eliminateNearPoints.getText().toString()));
+                    bundle.putInt("timeBetweenPoints", Integer.valueOf(timeBetweenPoints.getText().toString()));
                     bundle.putInt("deviceOrientation", deviceOrientation);
                     bundle.putInt("measureUnit", measureUnit);
                     newIntent.putExtras(bundle);
@@ -282,10 +299,11 @@ public class CreateNewMeasurement extends AppCompatActivity {
     protected TextView usernameTextView;
     protected CheckBox saveKMLFile;
     protected CheckBox saveRawFile;
-    protected CheckBox eliminateNearPoints;
+    protected AppCompatEditText eliminateNearPoints;
+    protected AppCompatEditText timeBetweenPoints;
     protected RadioGroup unitsRadioGroup;
     protected RadioGroup deviceOrientationRadioGroup;
-    private int measureUnit = UNIT_IN_G;
+    private int measureUnit = UNIT_IN_METRE_PER_SECOND_SQUARE;
     private int deviceOrientation = HORIZONTAL_DEVICE_ORIENTATION;
     protected AppCompatButton startMeasurement;
     protected ProgressDialog progressDialog;

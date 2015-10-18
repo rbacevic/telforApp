@@ -47,6 +47,7 @@
     <string name="measurement_description">Opis merenja</string>
     <string name="crete_measurement">Zapocnite merenje</string>
     <string name="measurement_name_missing">Niste uneli ime merenja</string>
+    <string name="field_missing">Niste popunili sva polja</string>
     <string name="user_id_missing">Doslo je do greske, molimo vas ulogujte se ponovo</string>
     <string name="save_kml">Sacuvaj KML fajl</string>
     <string name="save_raw">Sacuvaj CSV fajl</string>
@@ -56,6 +57,9 @@
     <string name="vertical">Vertikalan</string>
     <string name="phone_orintation">Polozaj telefona:</string>
     <string name="measure_unit">Merna jedinica:</string>
-    <string name="eleminate_near_ponts">Eleminisi tacke sa istom lokacijom</string>
+    <string name="eleminate_near_ponts">Eleminisi tacke sa lokacijom u krugu od </string>
+    <string name="meters">metara</string>
+    <string name="time_between_points">Izracunaj RMS na svakih </string>
+    <string name="seconds">sekundi</string>
 
 </resources>
