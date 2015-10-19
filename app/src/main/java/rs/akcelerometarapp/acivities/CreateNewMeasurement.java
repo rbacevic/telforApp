@@ -167,7 +167,7 @@ public class CreateNewMeasurement extends AppCompatActivity {
             return false;
         }
 
-        if (distance == null || distance.length() == 0) {
+        /*if (distance == null || distance.length() == 0) {
             Toast.makeText(this, getString(R.string.field_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
@@ -175,7 +175,7 @@ public class CreateNewMeasurement extends AppCompatActivity {
         if (time == null || time.length() == 0) {
             Toast.makeText(this, getString(R.string.field_missing), Toast.LENGTH_SHORT).show();
             return false;
-        }
+        }*/
 
         if (userId == null || userId.length() == 0) {
             Toast.makeText(this, getString(R.string.user_id_missing), Toast.LENGTH_SHORT).show();
@@ -226,6 +226,9 @@ public class CreateNewMeasurement extends AppCompatActivity {
     protected void startMeasure(String measurementName) {
 
         SessionManager sessionManager = SessionManager.getInstance(this);
+
+        eliminateNearPoints.setText(eliminateNearPoints.getText().toString().length() == 0 ? "10" : eliminateNearPoints.getText().toString());
+        timeBetweenPoints.setText(timeBetweenPoints.getText().toString().length() == 0 ? "10" : timeBetweenPoints.getText().toString());
 
         if (sessionManager.isLocalUser()) {
             Intent newIntent = new Intent(this, AccelerometerActivity.class);
@@ -288,7 +291,7 @@ public class CreateNewMeasurement extends AppCompatActivity {
                 }
             } catch (Exception e) {
                 ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                Toast.makeText(this, "Slaba konekcija sa internetom,pokusajte ponovo..", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Server nije trenutno dostupan...", Toast.LENGTH_SHORT).show();
                 e.printStackTrace();
             }
         }

@@ -149,8 +149,6 @@ public class AccelerometerActivity extends AppCompatActivity {
         mTempFilterList.clear();
         valueOfMaxRMS = 0;
         samplesCount = 0;
-        Toast.makeText(this, R.string.start_save_msg, Toast.LENGTH_SHORT)
-                .show();
     }
 
     @Override
@@ -287,7 +285,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                 break;
             case MENU_SAVE:
                 stopMeasurement();
-                if (saveRAWFile || saveRAWFile) {
+                if (saveRAWFile || saveKMLFile) {
                     saveHistory();
                 }
                 updatableLocationSubscription.unsubscribe();
@@ -511,16 +509,16 @@ public class AccelerometerActivity extends AppCompatActivity {
             float value = measureUnit == UNIT_IN_G ? event.values[index]/SensorManager.GRAVITY_EARTH : event.values[index];
 
             // Kreiranje low-pass filtera po formuli  aX = (x*0.1)+(ax*(1-0.1))
-            mLowPassFilters[index] = (mLowPassFilters[index] * (1 - mFilterRate))
+            mLowPassFilters[angle] = (mLowPassFilters[angle] * (1 - mFilterRate))
                     + (value * mFilterRate);
             // Filter
             switch (mPassFilter) {
                 case PASS_FILTER_LOW:
-                    value = mLowPassFilters[index];
+                    value = mLowPassFilters[angle];
                     break;
                     //High-pass filter po formuli aX = aX-((x*0.1)+(ax*(1-0.1)))
                 case PASS_FILTER_HIGH:
-                    value -= mLowPassFilters[index];
+                    value -= mLowPassFilters[angle];
                     break;
             }
 
@@ -529,9 +527,9 @@ public class AccelerometerActivity extends AppCompatActivity {
         }
 
         // Izracunavanje vektora akceleracije R - osa
-        Double dReal = Math.abs(Math.sqrt(Math.pow(mCurrents[DATA_X], 2)
-                + Math.pow(mCurrents[DATA_Y], 2)
-                + Math.pow(mCurrents[DATA_Z], 2)));
+        Double dReal = Math.abs(Math.sqrt(Math.pow(event.values[DATA_X], 2)
+                + Math.pow(event.values[DATA_Y], 2)
+                + Math.pow(event.values[DATA_Z], 2)));
         fReal = dReal.floatValue();
 
         // Kreiranje low-pass filtera
@@ -558,160 +556,195 @@ public class AccelerometerActivity extends AppCompatActivity {
             mHistory.add(mCurrents.clone());
         }
 
-        double startRmsXYZ = (Math.abs(Math.sqrt(Math.pow(mCurrents[0], 2)
-                + Math.pow(mCurrents[1], 2)
-                + Math.pow(mCurrents[2], 2))));
+        if (locationOfMaxRms != null) {
 
-        if (startRmsXYZ < RMS_TRACEHOLD) {
-            if (!measureStarted) {
-                measureStarted = true;
-                lastRMSDate = new Date();
-                Log.d(TAG, "start measuring");
-                Toast.makeText(this, "Uredjaj kalibirsan, pocinje merenje !!!", Toast.LENGTH_LONG).show();
+            if (!measureStarted && samplesCount == 0) {
+                Toast.makeText(this, "Postavite uredjaj u ravnotezan polozaj", Toast.LENGTH_LONG).show();
             }
-            //lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_green));
+
+            double currentRmsXYZ = 0;
+            if (mRecording) {
+                if (saveRAWFile && measureStarted) {
+                    mRawHistory.add(event.values.clone());    // dodavanje raw signala u listu
+                    mFilterHistory.add(mCurrents.clone());    // dodavanje filtiranog signala u listu
+                }
+                mTempFilterList.add(mCurrents.clone());
+
+                currentRmsXYZ = (Math.abs(Math.sqrt(Math.pow(mCurrents[DATA_X], 2)
+                        + Math.pow(mCurrents[DATA_Y], 2)
+                        + Math.pow(mCurrents[DATA_Z], 2))));
+                samplesCount++;
+
+                if (currentRmsXYZ >= valueOfMaxRMS) {
+                    valueOfMaxRMS = currentRmsXYZ;
+                    getDetectionLocation();
+                }
+
+                //check last update time
+                long diff = -1;
+                if(lastRMSDate != null) {
+                    diff = new Date().getTime() - lastRMSDate.getTime();
+                }
+
+                if(diff > minTimeBetweenTwoPoints) {
+                    if (measureStarted) {
+                        if (minDistanceBetweenTwoPoints > 0) {
+                            if (locationUpdated) {
+                                calculateRMSPoint(true);
+                            } else {
+                                lastRMSDate = new Date();
+                                mTempFilterList.clear();
+                                valueOfMaxRMS = 0;
+                                samplesCount = 0;
+                                Log.d(TAG,"Prostorna neosetljivost");
+                            }
+                        } else  {
+                            calculateRMSPoint(true);
+                        }
+                    } else {
+                        //kalibracija
+                        calculateRMSPoint(false);
+                    }
+                }
+            }
         } else {
-            //lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_red));
+            //uzimanje prvog GPS-a
+            if (lastRMSDate == null) {
+                Toast.makeText(this, "Traznje GPS-a...", Toast.LENGTH_SHORT).show();
+            }
+            getDetectionLocation();
+            lastRMSDate = new Date();
+        }
+    }
+
+    private void getDetectionLocation() {
+        updatableLocationSubscription = locationUpdatesObservable
+                .subscribe(new Subscriber<Location>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onNext(Location location) {
+
+                        if (locationOfMaxRms == null) {
+                            Toast.makeText(AccelerometerActivity.this, "GPS pronadjen", Toast.LENGTH_LONG).show();
+                        }
+
+                        if (locationOfMaxRms != null && minDistanceBetweenTwoPoints > 0) {
+                            float distanceInMeters = locationOfMaxRms.distanceTo(location);
+                            // Log.d(TAG, "distance in meters" + distanceInMeters);
+                            if (distanceInMeters > minDistanceBetweenTwoPoints) {
+                                locationOfMaxRms = location;
+                                locationUpdated = true;
+                            }
+                        } else {
+                            locationOfMaxRms=location;
+                            locationUpdated = true;
+                        }
+                    }
+                });
+    }
+
+    private void calculateRMSPoint(boolean recordPoint) {
+        Iterator<float[]> iterator = mTempFilterList.iterator();
+
+        double rmsX = 0;
+        double rmsY = 0;
+        double rmsZ = 0;
+        double rmsXYZ = 0;
+        double maxRmsX = 0;
+        double maxRmsY = 0;
+        double maxRmsZ = 0;
+
+        while (iterator.hasNext()) {
+
+            float[] values = iterator.next();
+
+            double currentApeakX = values[DATA_X];
+            if (maxRmsX < currentApeakX) {
+                maxRmsX = currentApeakX;
+            }
+            rmsX += Math.pow(currentApeakX, 2);
+
+            double currentApeakY = values[DATA_Y];
+            if (maxRmsY < currentApeakY) {
+                maxRmsY = currentApeakY;
+            }
+            rmsY += Math.pow(currentApeakY, 2);
+
+            double currentApeakZ = values[DATA_Z];
+            if (maxRmsZ < currentApeakZ) {
+                maxRmsZ = currentApeakZ;
+            }
+            rmsZ += Math.pow(currentApeakZ, 2);
+
+            rmsXYZ += (Math.pow(values[DATA_X], 2)
+                    + Math.pow(values[DATA_Y], 2)
+                    + Math.pow(values[DATA_Z], 2));
         }
 
-        double currentRmsXYZ = 0;
-        if (mRecording && measureStarted) {
+        rmsX = Math.sqrt(rmsX / samplesCount);
+        rmsY = Math.sqrt(rmsY / samplesCount);
+        rmsZ = Math.sqrt(rmsZ / samplesCount);
+        rmsXYZ = Math.sqrt(rmsXYZ / samplesCount);
+        Log.d("samples count ", "" + samplesCount);
 
-            if (saveRAWFile) {
-                mRawHistory.add(event.values.clone());    // dodavanje raw signala u listu
-                mFilterHistory.add(mCurrents.clone());    // dodavanje filtiranog signala u listu
+        Date date = new Date(locationOfMaxRms.getTime());
+        java.text.DateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss:SSS");
+        String dateFormatted = dateFormatter.format(date);
+
+        Log.d(TAG, "RMS X: " + rmsX);
+        Log.d(TAG, "RMS Y: " + rmsY);
+        Log.d(TAG, "RMS Z: " + rmsZ);
+        Log.d(TAG, "Max RMS X: " + maxRmsX);
+        Log.d(TAG, "Max RMS Y: " + maxRmsY);
+        Log.d(TAG, "Max RMS Z: " + maxRmsZ);
+        Log.d(TAG, "Max RMS XYZ: " + valueOfMaxRMS);
+        Log.d(TAG, "RMS XYZ: " + rmsXYZ);
+        Log.d("latitude",locationOfMaxRms.getLatitude()+"");
+        Log.d("longitude", locationOfMaxRms.getLongitude() + "");
+        Log.d("time", dateFormatted + "");
+
+        rmsTextView.setText("RMS: " + roundTwoDecimals(rmsXYZ));
+
+        if (rmsXYZ >= RMS_TRACEHOLD) {
+            if (recordPoint) {
+                createPoint("highlightPlacemark", locationOfMaxRms, rmsX,
+                        rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted,
+                        maxRmsX, maxRmsY, maxRmsZ);
+                String text = "Snimljena <font color='red'>NEUDOBNA</font> tacka !!!";
+                Toast.makeText(this, Html.fromHtml(text), Toast.LENGTH_SHORT).show();
             }
-            mTempFilterList.add(mCurrents.clone());
-
-            currentRmsXYZ = (Math.abs(Math.sqrt(Math.pow(mCurrents[0], 2)
-                    + Math.pow(mCurrents[1], 2)
-                    + Math.pow(mCurrents[2], 2))));
-            samplesCount++;
-
-            if (currentRmsXYZ >= valueOfMaxRMS) {
-                valueOfMaxRMS = currentRmsXYZ;
-                updatableLocationSubscription = locationUpdatesObservable
-                        .subscribe(new Subscriber<Location>() {
-                            @Override
-                            public void onCompleted() {
-
-                            }
-
-                            @Override
-                            public void onError(Throwable e) {
-
-                            }
-
-                            @Override
-                            public void onNext(Location location) {
-
-                                if (locationOfMaxRms != null) {
-                                    float distanceInMeters = locationOfMaxRms.distanceTo(location);
-                                    Log.d(TAG, "distance in meters" + distanceInMeters);
-                                    if (distanceInMeters > minDistanceBetweenTwoPoints) {
-                                        locationOfMaxRms = location;
-                                        locationUpdated = true;
-                                    }
-                                } else {
-                                    locationOfMaxRms=location;
-                                    locationUpdated = true;
-                                }
-                            }
-                        });
+            lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_red));
+        } else {
+            if (recordPoint) {
+                createPoint("normalPlacemark", locationOfMaxRms, rmsX,
+                        rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted,
+                        maxRmsX, maxRmsY, maxRmsZ);
+                String text = "Snimljena <font color='green'>UDOBNA</font> tacka !!!";
+                Toast.makeText(this, Html.fromHtml(text), Toast.LENGTH_SHORT).show();
             }
-
-            //check last update time
-            long diff = -1;
-            if(lastRMSDate != null && measureStarted) {
-                diff = new Date().getTime() - lastRMSDate.getTime();
-            }
-
-            if(diff > minTimeBetweenTwoPoints && locationUpdated) {
-                Iterator<float[]> iterator = mTempFilterList.iterator();
-
-                double rmsX = 0;
-                double rmsY = 0;
-                double rmsZ = 0;
-                double rmsXYZ = 0;
-                double maxRmsX = 0;
-                double maxRmsY = 0;
-                double maxRmsZ = 0;
-
-                while (iterator.hasNext()) {
-
-                    float[] values = iterator.next();
-
-                    //  double currentRMSX = Math.pow(values[0], 2);
-                    double currentApeakX = values[0];
-                    if (maxRmsX < currentApeakX) {
-                        maxRmsX = currentApeakX;
-                    }
-                    rmsX += Math.pow(currentApeakX, 2);
-
-                    double currentApeakY = values[1];
-                    if (maxRmsY < currentApeakY) {
-                        maxRmsY = currentApeakY;
-                    }
-                    rmsY += Math.pow(currentApeakY, 2);
-
-                    double currentApeakZ = values[2];
-                    if (maxRmsZ < currentApeakZ) {
-                        maxRmsZ = currentApeakZ;
-                    }
-                    rmsZ += Math.pow(currentApeakZ, 2);
-
-                    rmsXYZ += (Math.pow(values[0], 2)
-                            + Math.pow(values[1], 2)
-                            + Math.pow(values[2], 2));
-                }
-
-                rmsX = Math.sqrt(rmsX / samplesCount);
-                rmsY = Math.sqrt(rmsY / samplesCount);
-                rmsZ = Math.sqrt(rmsZ / samplesCount);
-                rmsXYZ = Math.sqrt(rmsXYZ / samplesCount);
-                Log.d("samples count ", "" + samplesCount);
-
-                Date date = new Date(locationOfMaxRms.getTime());
-                java.text.DateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss:SSS");
-                String dateFormatted = dateFormatter.format(date);
-
-                Log.d(TAG, "RMS X: " + rmsX);
-                Log.d(TAG, "RMS Y: " + rmsY);
-                Log.d(TAG, "RMS Z: " + rmsZ);
-                Log.d(TAG, "Max RMS X: " + maxRmsX);
-                Log.d(TAG, "Max RMS Y: " + maxRmsY);
-                Log.d(TAG, "Max RMS Z: " + maxRmsZ);
-                Log.d(TAG, "Max RMS XYZ: " + valueOfMaxRMS);
-                Log.d(TAG, "RMS XYZ: " + rmsXYZ);
-                Log.d("latitude",locationOfMaxRms.getLatitude()+"");
-                Log.d("longitude",locationOfMaxRms.getLongitude()+"");
-                Log.d("time",dateFormatted+"");
-
-                rmsTextView.setText("RMS: " + roundTwoDecimals(rmsX));
-
-                if (rmsXYZ >= RMS_TRACEHOLD) {
-                    createPoint("highlightPlacemark", locationOfMaxRms, rmsX,
-                            rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted,
-                            maxRmsX, maxRmsY, maxRmsZ);
-                    lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_red));
-                    String text = "Snimljena <font color='red'>NEUDOBNA</font> tacka !!!";
-                    Toast.makeText(this, Html.fromHtml(text), Toast.LENGTH_SHORT).show();
-                } else {
-                    createPoint("normalPlacemark", locationOfMaxRms, rmsX,
-                            rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted,
-                            maxRmsX, maxRmsY, maxRmsZ);
-                    lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_green));
-                    String text = "Snimljena <font color='green'>UDOBNA</font> tacka !!!";
-                    Toast.makeText(this, Html.fromHtml(text), Toast.LENGTH_SHORT).show();
-                }
-
-                lastRMSDate = new Date();
-                mTempFilterList.clear();
-                valueOfMaxRMS = 0;
-                samplesCount = 0;
-                locationUpdated = false;
-            }
+            lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_green));
         }
+
+        if (rmsXYZ < RMS_TRACEHOLD && !measureStarted && !recordPoint) {
+            measureStarted = true;
+            Log.d(TAG, "start measuring");
+            Toast.makeText(this, "Uredjaj kalibirsan, pocinje merenje !!!", Toast.LENGTH_LONG).show();
+        }
+
+        lastRMSDate = new Date();
+        mTempFilterList.clear();
+        valueOfMaxRMS = 0;
+        samplesCount = 0;
+        locationUpdated = false;
     }
 
     private void createPoint(String pointStyle, Location location, double rmsX,
@@ -787,7 +820,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                     Toast.makeText(this, "Merenje je uspesno sacuvano", Toast.LENGTH_SHORT).show();
                 }
             } catch (Exception e) {
-                Toast.makeText(this, "Slaba konekcija sa internetom,pokusajte ponovo..", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Server nije trenutno dostupan...", Toast.LENGTH_SHORT).show();
                 e.printStackTrace();
             }
         }
@@ -1030,7 +1063,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                 .checkLocationSettings(
                         new LocationSettingsRequest.Builder()
                                 .addLocationRequest(locationRequest)
-                                .setAlwaysShow(true)  //Refrence: http://stackoverflow.com/questions/29824408/google-play-services-locationservices-api-new-option-never
+                                .setAlwaysShow(false)  //Refrence: http://stackoverflow.com/questions/29824408/google-play-services-locationservices-api-new-option-never
                                 .build()
                 )
                 .doOnNext(new Action1<LocationSettingsResult>() {
@@ -1082,7 +1115,8 @@ public class AccelerometerActivity extends AppCompatActivity {
                     }
                 }
 
-                String desc = "User: " + username + "\njedinica: " + unit + "\npolozaj uredjaja: " + deviceOrient +
+                String desc = "User: " + username + "\nopis merenja: " + measurementDescription +
+                        "\njedinica: " + unit + "\npolozaj uredjaja: " + deviceOrient +
                         "\nformati: " + saveFile + "\nminimalna distanca izmedju dve tacke: " + minDistanceBetweenTwoPoints + "m" +
                         "\nminimalno vreme izmedju dve tacke: " + minTimeBetweenTwoPoints/1000 + "s";
 

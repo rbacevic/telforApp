@@ -53,13 +53,13 @@
     <string name="save_raw">Sacuvaj CSV fajl</string>
     <string name="unit_in_g">G</string>
     <string name="metre_per_second_square">m/s^2</string>
-    <string name="horizontal">Horizontalan</string>
-    <string name="vertical">Vertikalan</string>
+    <string name="horizontal">H</string>
+    <string name="vertical">V</string>
     <string name="phone_orintation">Polozaj telefona:</string>
     <string name="measure_unit">Merna jedinica:</string>
     <string name="eleminate_near_ponts">Eleminisi tacke sa lokacijom u krugu od </string>
-    <string name="meters">metara</string>
+    <string name="meters">m</string>
     <string name="time_between_points">Izracunaj RMS na svakih </string>
-    <string name="seconds">sekundi</string>
+    <string name="seconds">s</string>
 
 </resources>
