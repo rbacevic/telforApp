@@ -201,7 +201,9 @@ public class AccelerometerActivity extends AppCompatActivity {
         super.onBackPressed();
         if (mRecording) {
             stopMeasurement();
-            saveHistory();
+            if (saveKMLFile || saveRAWFile) {
+                saveHistory();
+            }
             updatableLocationSubscription.unsubscribe();
             finish();
         }
@@ -527,13 +529,14 @@ public class AccelerometerActivity extends AppCompatActivity {
         }
 
         // Izracunavanje vektora akceleracije R - osa
-        Double dReal = Math.abs(Math.sqrt(Math.pow(event.values[DATA_X], 2)
-                + Math.pow(event.values[DATA_Y], 2)
-                + Math.pow(event.values[DATA_Z], 2)));
+        Double dReal = Math.abs(Math.sqrt(Math.pow(mCurrents[DATA_X], 2)
+                + Math.pow(mCurrents[DATA_Y], 2)
+                + Math.pow(mCurrents[DATA_Z], 2)));
         fReal = dReal.floatValue();
 
+       // Log.d(TAG, "freal 1 " + fReal);
         // Kreiranje low-pass filtera
-        mLowPassFilters[DATA_R] = (mLowPassFilters[DATA_R] * (1 - mFilterRate))
+       /* mLowPassFilters[DATA_R] = (mLowPassFilters[DATA_R] * (1 - mFilterRate))
                 + (fReal * mFilterRate);
         // filter
         switch (mPassFilter) {
@@ -543,9 +546,10 @@ public class AccelerometerActivity extends AppCompatActivity {
             case PASS_FILTER_HIGH:
                 fReal -= mLowPassFilters[DATA_R];
                 break;
-        }
+        }*/
         mCurrents[DATA_R] = fReal;
         mAccValueViews[DATA_R].setText(roundFourDecimals(fReal));
+        //Log.d(TAG, "freal 2 " + fReal);
 
         //Log.d(TAG, "currents: " + mCurrents[0] + " " + mCurrents[1] + " " + mCurrents[2] + " " + mCurrents[3]);
         synchronized (this) {
@@ -1063,7 +1067,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                 .checkLocationSettings(
                         new LocationSettingsRequest.Builder()
                                 .addLocationRequest(locationRequest)
-                                .setAlwaysShow(false)  //Refrence: http://stackoverflow.com/questions/29824408/google-play-services-locationservices-api-new-option-never
+                                .setAlwaysShow(true)  //Refrence: http://stackoverflow.com/questions/29824408/google-play-services-locationservices-api-new-option-never
                                 .build()
                 )
                 .doOnNext(new Action1<LocationSettingsResult>() {
@@ -1085,7 +1089,6 @@ public class AccelerometerActivity extends AppCompatActivity {
                         return locationProvider.getUpdatedLocation(locationRequest);
                     }
                 });
-
     }
 
     //*********************************** Save History *******************************************//
@@ -1138,8 +1141,11 @@ public class AccelerometerActivity extends AppCompatActivity {
                 int n = mHistory.size();
                 int nRaw = mRawHistory.size();
                 // pomera se filtrirana lista
-                for (int i = 0; i < n - nRaw; i++)
-                    iterator.next();
+                for (int i = 0; i < n - nRaw; i++) {
+                    if (iterator.hasNext()) {
+                        iterator.next();
+                    }
+                }
                 // kraj sinhonizacije
 
                 //Iteracija kroz strukturu i formatiranje izvestaja sa zarezom i novim redom

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">VibroMap</string>
+    <string name="app_name">VibroDroid</string>
     <string name="accele_x_label">X</string>
     <string name="accele_y_label">Y</string>
     <string name="accele_z_label">Z</string>
