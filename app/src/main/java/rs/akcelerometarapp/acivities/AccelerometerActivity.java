@@ -1,8 +1,6 @@
 package rs.akcelerometarapp.acivities;
 
 import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -14,14 +12,10 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
-import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -52,8 +46,8 @@ import com.google.android.gms.location.LocationSettingsStatusCodes;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 
-import java.io.File;
 import java.io.FileOutputStream;
+import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -65,6 +59,7 @@ import pl.charmas.android.reactivelocation.ReactiveLocationProvider;
 import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
 import rs.akcelerometarapp.network.dtos.URLS;
+import rs.akcelerometarapp.utils.FileUtils;
 import rs.akcelerometarapp.utils.KmlUtils;
 import rs.akcelerometarapp.utils.SessionManager;
 import rx.Observable;
@@ -132,6 +127,8 @@ public class AccelerometerActivity extends AppCompatActivity {
                 saveFile = "CSV";
             }
         }
+
+        fileUtils = new FileUtils(this);
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         String title = getResources().getString(R.string.app_name) + " - " + username + " / " + saveFile + " / "
@@ -329,16 +326,16 @@ public class AccelerometerActivity extends AppCompatActivity {
         }
     }
 
-    public final LocationRequest locationRequest() {
+    private LocationRequest locationRequest() {
         return LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setNumUpdates(5)
+                .setNumUpdates(1)
                 .setInterval(100);
     }
 
     //********************************* Private API UI *******************************************//
 
-    protected void configureUI() {
+    private void configureUI() {
 
         // Uzimanje frame layout-a
         FrameLayout frame = (FrameLayout) findViewById(R.id.frame);
@@ -534,22 +531,8 @@ public class AccelerometerActivity extends AppCompatActivity {
                 + Math.pow(mCurrents[DATA_Z], 2)));
         fReal = dReal.floatValue();
 
-       // Log.d(TAG, "freal 1 " + fReal);
-        // Kreiranje low-pass filtera
-       /* mLowPassFilters[DATA_R] = (mLowPassFilters[DATA_R] * (1 - mFilterRate))
-                + (fReal * mFilterRate);
-        // filter
-        switch (mPassFilter) {
-            case PASS_FILTER_LOW:
-                fReal = mLowPassFilters[DATA_R];
-                break;
-            case PASS_FILTER_HIGH:
-                fReal -= mLowPassFilters[DATA_R];
-                break;
-        }*/
         mCurrents[DATA_R] = fReal;
         mAccValueViews[DATA_R].setText(roundFourDecimals(fReal));
-        //Log.d(TAG, "freal 2 " + fReal);
 
         //Log.d(TAG, "currents: " + mCurrents[0] + " " + mCurrents[1] + " " + mCurrents[2] + " " + mCurrents[3]);
         synchronized (this) {
@@ -566,15 +549,24 @@ public class AccelerometerActivity extends AppCompatActivity {
                 Toast.makeText(this, "Postavite uredjaj u ravnotezan polozaj", Toast.LENGTH_LONG).show();
             }
 
-            double currentRmsXYZ = 0;
             if (mRecording) {
                 if (saveRAWFile && measureStarted) {
+
+                    if (rawFileOutputStream == null) {
+                        rawFileOutputStream = fileUtils.createCSVFile(System.currentTimeMillis());
+                    }
+
                     mRawHistory.add(event.values.clone());    // dodavanje raw signala u listu
                     mFilterHistory.add(mCurrents.clone());    // dodavanje filtiranog signala u listu
                 }
+
+                if (saveKMLFile && kmlFileOutputStream == null) {
+                    kmlFileOutputStream = fileUtils.createKMLFile(System.currentTimeMillis(), getKmlHeaderString());
+                }
+
                 mTempFilterList.add(mCurrents.clone());
 
-                currentRmsXYZ = (Math.abs(Math.sqrt(Math.pow(mCurrents[DATA_X], 2)
+                double currentRmsXYZ = (Math.abs(Math.sqrt(Math.pow(mCurrents[DATA_X], 2)
                         + Math.pow(mCurrents[DATA_Y], 2)
                         + Math.pow(mCurrents[DATA_Z], 2))));
                 samplesCount++;
@@ -613,11 +605,14 @@ public class AccelerometerActivity extends AppCompatActivity {
             }
         } else {
             //uzimanje prvog GPS-a
-            if (lastRMSDate == null) {
-                Toast.makeText(this, "Traznje GPS-a...", Toast.LENGTH_SHORT).show();
+            if (!getIntialGPS) {
+                getIntialGPS = true;
+                if (lastRMSDate == null) {
+                    Toast.makeText(this, "Traznje GPS-a...", Toast.LENGTH_SHORT).show();
+                }
+                getDetectionLocation();
+                lastRMSDate = new Date();
             }
-            getDetectionLocation();
-            lastRMSDate = new Date();
         }
     }
 
@@ -657,6 +652,7 @@ public class AccelerometerActivity extends AppCompatActivity {
     }
 
     private void calculateRMSPoint(boolean recordPoint) {
+
         Iterator<float[]> iterator = mTempFilterList.iterator();
 
         double rmsX = 0;
@@ -701,7 +697,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         Log.d("samples count ", "" + samplesCount);
 
         Date date = new Date(locationOfMaxRms.getTime());
-        java.text.DateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss:SSS");
+        DateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss:SSS");
         String dateFormatted = dateFormatter.format(date);
 
         Log.d(TAG, "RMS X: " + rmsX);
@@ -725,6 +721,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                         maxRmsX, maxRmsY, maxRmsZ);
                 String text = "Snimljena <font color='red'>NEUDOBNA</font> tacka !!!";
                 Toast.makeText(this, Html.fromHtml(text), Toast.LENGTH_SHORT).show();
+                fileUtils.appendResultsToCsvFile(rawFileOutputStream, mFilterHistory, mRawHistory);
             }
             lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_red));
         } else {
@@ -734,6 +731,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                         maxRmsX, maxRmsY, maxRmsZ);
                 String text = "Snimljena <font color='green'>UDOBNA</font> tacka !!!";
                 Toast.makeText(this, Html.fromHtml(text), Toast.LENGTH_SHORT).show();
+                fileUtils.appendResultsToCsvFile(rawFileOutputStream, mFilterHistory, mRawHistory);
             }
             lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_green));
         }
@@ -744,6 +742,8 @@ public class AccelerometerActivity extends AppCompatActivity {
             Toast.makeText(this, "Uredjaj kalibirsan, pocinje merenje !!!", Toast.LENGTH_LONG).show();
         }
 
+        mFilterHistory.clear();
+        mRawHistory.clear();
         lastRMSDate = new Date();
         mTempFilterList.clear();
         valueOfMaxRMS = 0;
@@ -762,7 +762,7 @@ public class AccelerometerActivity extends AppCompatActivity {
             String kmlelement = KmlUtils.createKMLPointString(pointStyle, kmlPointsCounter, rmsX, rmsY,
                     rmsZ,rmsXYZ, maxRmsXYZ,dateFormatted, speedInKmPerHour, location.getLatitude(),
                     location.getLongitude(), location.getAltitude(), maxRmsX, maxRmsY, maxRmsZ);
-            kmlElements = kmlElements + kmlelement;
+            fileUtils.appendResultsToKmlFile(kmlFileOutputStream, kmlelement);
         }
 
         if (!SessionManager.getInstance(this).isLocalUser()) {
@@ -1009,7 +1009,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     //*********************************** Listeners **********************************************//
 
-    public Observable<Float> seekBarChangeListener(final SeekBar seekBar) {
+    private Observable<Float> seekBarChangeListener(final SeekBar seekBar) {
         return Observable.create(new Observable.OnSubscribe<Float>() {
             @Override
             public void call(final Subscriber<? super Float> subscriber) {
@@ -1034,7 +1034,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         });
     }
 
-    public Subscription defineSensorListener() {
+    private Subscription defineSensorListener() {
         sensor = reactiveSensor.observeSensor(Sensor.TYPE_ACCELEROMETER, mSensorDelay)
                 .onBackpressureDrop()
                 .retry()
@@ -1062,7 +1062,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         return sensor;
     }
 
-    Observable<Location> getLocationUpdatesObservable() {
+    private Observable<Location> getLocationUpdatesObservable() {
         return locationProvider
                 .checkLocationSettings(
                         new LocationSettingsRequest.Builder()
@@ -1093,148 +1093,31 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     //*********************************** Save History *******************************************//
 
-    private class SaveThread extends Thread {
-        @Override
-        public void run() {
+    private String getKmlHeaderString() {
 
-            //KML file
-            String kmlContent = null;
-            if (saveKMLFile) {
+        String username = SessionManager.getInstance(AccelerometerActivity.this).getKeyUsername();
+        String unit = measureUnit == 0 ? "G" : "m/s^2";
+        String deviceOrient = deviceOrientation == 0 ? "H" : "V";
+        String saveFile = "";
 
-                String username = SessionManager.getInstance(AccelerometerActivity.this).getKeyUsername();
-                String unit = measureUnit == 0 ? "G" : "m/s^2";
-                String deviceOrient = deviceOrientation == 0 ? "H" : "V";
-                String saveFile = "";
-
-                if (saveKMLFile) {
-                    saveFile = "KML";
-                }
-
-                if (saveRAWFile) {
-                    if (saveFile.length() > 0) {
-                        saveFile = saveFile + " i CSV";
-                    } else {
-                        saveFile = "CSV";
-                    }
-                }
-
-                String desc = "User: " + username + "\nopis merenja: " + measurementDescription +
-                        "\njedinica: " + unit + "\npolozaj uredjaja: " + deviceOrient +
-                        "\nformati: " + saveFile + "\nminimalna distanca izmedju dve tacke: " + minDistanceBetweenTwoPoints + "m" +
-                        "\nminimalno vreme izmedju dve tacke: " + minTimeBetweenTwoPoints/1000 + "s";
-
-                kmlContent = KmlUtils.getKMLStartString(measurementName, desc);
-                kmlContent = kmlContent + kmlElements;
-                kmlContent = kmlContent + KmlUtils.getKMLEndString();
-            }
-
-            StringBuilder csvData = null;
-            if (saveRAWFile) {
-                // Kreiranje datoteke u CSV formatu
-                csvData = new StringBuilder();
-                // Iterator za ConcurrentLinkedQueue<float[]> mRawHistory
-                // Iterator<float[]> iteratorpom = mHistory.iterator();            // uvek ima 230 odmeraka,LOSE, pomocna lista, NE KORISTI SE
-                Iterator<float[]> iterator = mFilterHistory.iterator();
-                Iterator<float[]> iteratorRaw = mRawHistory.iterator();
-
-                // sinhonizacija listi da se poklapaju podaci na grafiku, sad mozda i ne treba
-                int n = mHistory.size();
-                int nRaw = mRawHistory.size();
-                // pomera se filtrirana lista
-                for (int i = 0; i < n - nRaw; i++) {
-                    if (iterator.hasNext()) {
-                        iterator.next();
-                    }
-                }
-                // kraj sinhonizacije
-
-                //Iteracija kroz strukturu i formatiranje izvestaja sa zarezom i novim redom
-                while (iterator.hasNext() && iteratorRaw.hasNext()) {
-                    float[] values = iterator.next();
-                    float[] valuesRaw = iteratorRaw.next();
-                    for (int angle = 0; angle < 3; angle++) {
-                        csvData.append(String.valueOf(values[angle]));
-                        if (angle < 3) {
-                            csvData.append(",");
-                        }
-                    }
-                    for (int angle = 0; angle < 3; angle++) {
-                        csvData.append(String.valueOf(valuesRaw[angle]));
-                        if (angle < 3) {
-                            csvData.append(",");
-                        }
-                    }
-                    csvData.append("\n");
-                }
-//			    csvData.append(String.valueOf(mFilterHistory.size()));	// velicina filtirane liste
-//		       	csvData.append("\n");
-//			    csvData.append(String.valueOf(mRawHistory.size()));		// velicina raw liste
-//			    csvData.append("\n");
-            }
-
-            // Priprema za Poruku
-            Message msg = new Message();
-            Bundle bundle = new Bundle();
-
-            try {
-                // Kreiranje direktorijuma na SD kartici ako ne postoji
-                String appName = getResources().getString(R.string.app_name);
-                String dirPath = Environment.getExternalStorageDirectory()
-                        .toString() + "/" + appName;
-                File dir = new File(dirPath);
-                if (!dir.exists()) {
-                    dir.mkdirs();
-                }
-
-                // Snimanje u CSV datoteku
-                if (saveRAWFile && csvData != null) {
-                    String fileName = DateFormat
-                            .format("yyyy-MM-dd-kk-mm-ss",
-                                    System.currentTimeMillis()).toString()
-                            .concat(".csv");
-                    File file = new File(dirPath, fileName);
-                    if (file.createNewFile()) {
-                        FileOutputStream fileOutputStream = new FileOutputStream(
-                                file);
-                        // Unos podataka
-                        fileOutputStream.write(csvData.toString().getBytes());
-                        fileOutputStream.close();
-                    }
-                }
-
-                //Snimanje u kml datoteku
-                if (saveKMLFile && kmlContent != null) {
-                    String kmlFileName = DateFormat
-                            .format("yyyy-MM-dd-kk-mm-ss",
-                                    System.currentTimeMillis()).toString()
-                            .concat(".kml");
-                    File kmlFile = new File(dirPath, kmlFileName);
-                    if (kmlFile.createNewFile()) {
-                        FileOutputStream kmlFileOutputStream = new FileOutputStream(
-                                kmlFile);
-                        // Unos podataka
-                        kmlFileOutputStream.write(kmlContent.getBytes());
-                        kmlFileOutputStream.close();
-                    }
-                }
-
-                // Kompletirenje unosa podataka u datoteku
-                bundle.putString("msg", AccelerometerActivity.this.getResources()
-                        .getString(R.string.save_complate));
-                bundle.putBoolean("success", true);
-
-            } catch (Exception e) {
-//				Log.e(TAG, e.getMessage());
-
-                // Upozorenje o neuspelom snimanju
-                bundle.putString("msg", e.getMessage());
-                bundle.putBoolean("success", false);
-            }
-
-            // Messaging koristi handler
-            msg.setData(bundle);
-            mHandler.sendMessage(msg);
+        if (saveKMLFile) {
+            saveFile = "KML";
         }
+
+        if (saveRAWFile) {
+            if (saveFile.length() > 0) {
+                saveFile = saveFile + " i CSV";
+            } else {
+                saveFile = "CSV";
+            }
+        }
+
+        String desc = "User: " + username + "\nopis merenja: " + measurementDescription +
+                "\njedinica: " + unit + "\npolozaj uredjaja: " + deviceOrient +
+                "\nformati: " + saveFile + "\nminimalna distanca izmedju dve tacke: " + minDistanceBetweenTwoPoints + "m" +
+                "\nminimalno vreme izmedju dve tacke: " + minTimeBetweenTwoPoints/1000 + "s";
+
+        return  KmlUtils.getKMLStartString(measurementName, desc);
     }
 
     private void saveHistory() {
@@ -1244,49 +1127,16 @@ public class AccelerometerActivity extends AppCompatActivity {
         // Zaustavi graf
         stopGraph();
 
-        //Prikaz prgresivnog dialoga iz klase Dialog
-        showDialog(DIALOG_SAVE_PROGRESS);
+        if (saveRAWFile) {
+            fileUtils.finishEditingCsvFile(rawFileOutputStream);
+        }
 
-        // Startovanje SaveThread niti
-        SaveThread thread = new SaveThread();
-        thread.start();
+
+        if (saveKMLFile) {
+            fileUtils.finishEditingKmlFile(kmlFileOutputStream);
+        }
     }
 
-    @Override
-    protected Dialog onCreateDialog(int id) {
-        switch (id) {
-            case DIALOG_SAVE_PROGRESS:
-                ProgressDialog saveProgress = new ProgressDialog(this);
-                saveProgress.setTitle("During storage");
-                saveProgress.setMessage("I have to save the history");
-                saveProgress.setIndeterminate(false);
-                saveProgress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-                saveProgress.setMax(100);
-                saveProgress.setCancelable(false);
-                saveProgress.show();
-                return saveProgress;
-        }
-        return super.onCreateDialog(id);
-    }
-
-    private final Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            removeDialog(DIALOG_SAVE_PROGRESS);
-
-            Bundle data = msg.getData();
-            if (data.getBoolean("success")) {
-                // Inicijalizacija RAW history-a
-                mRawHistory = new ConcurrentLinkedQueue<>();
-                mFilterHistory = new ConcurrentLinkedQueue<>();
-            }
-
-            Toast.makeText(AccelerometerActivity.this, data.getString("msg"),
-                    Toast.LENGTH_SHORT).show();
-
-            startGraph();
-        }
-    };
 
     private static final String TAG = "Akcelerometar_AP";
 
@@ -1301,8 +1151,6 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     private static final int MENU_SENSOR_DELAY = (Menu.FIRST + 1);
     private static final int MENU_SAVE = (Menu.FIRST + 2);
-
-    private static final int DIALOG_SAVE_PROGRESS = 0;
 
     private static final double RMS_TRACEHOLD = 0.315;
     private static final int UNIT_IN_G = 0;
@@ -1334,8 +1182,10 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     private boolean saveKMLFile = false;
     private boolean saveRAWFile = false;
-    private String kmlElements;
     private int kmlPointsCounter = 1;
+    private FileUtils fileUtils;
+    private FileOutputStream rawFileOutputStream;
+    private FileOutputStream kmlFileOutputStream;
 
     private String measurementId;
     private String userId;
@@ -1348,6 +1198,7 @@ public class AccelerometerActivity extends AppCompatActivity {
     private int minDistanceBetweenTwoPoints;
     private long minTimeBetweenTwoPoints;
     private boolean locationUpdated;
+    private boolean getIntialGPS = false;
 
     private boolean measureStarted = false;
     private int samplesCount = 0;
@@ -1366,7 +1217,7 @@ public class AccelerometerActivity extends AppCompatActivity {
     private int mPassFilter = PASS_FILTER_HIGH;
     private float mFilterRate = 0.1f;
     private boolean mRecording = false;
-    Toolbar toolbar;
+    private Toolbar toolbar;
     private float fReal;
 
     private Subscription sensor;
@@ -1374,8 +1225,8 @@ public class AccelerometerActivity extends AppCompatActivity {
     private ReactiveLocationProvider locationProvider;
     private Observable<Location> locationUpdatesObservable;
     private Subscription updatableLocationSubscription;
-    LocationRequest locationRequest;
-    Location locationOfMaxRms;
+    private LocationRequest locationRequest;
+    private Location locationOfMaxRms;
     private double valueOfMaxRMS;
     private static final int REQUEST_CHECK_SETTINGS = 0;
 }
