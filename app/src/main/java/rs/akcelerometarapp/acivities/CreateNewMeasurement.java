@@ -135,11 +135,6 @@ public class CreateNewMeasurement extends AppCompatActivity {
             userId = sessionManager.getKeyUserId();
             username = sessionManager.getKeyUsername();
         }
-        /*Bundle bundle = getIntent().getExtras();
-        if (bundle != null) {
-            userId = bundle.getString("id");
-            username = bundle.getString("username");
-        }*/
         usernameTextView.setText(username);
     }
 
@@ -159,23 +154,11 @@ public class CreateNewMeasurement extends AppCompatActivity {
     protected boolean validateFields() {
 
         String name = measurementName.getText().toString();
-        String distance = eliminateNearPoints.getText().toString();
-        String time = timeBetweenPoints.getText().toString();
 
         if (name == null || name.length() == 0) {
             Toast.makeText(this, getString(R.string.measurement_name_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
-
-        /*if (distance == null || distance.length() == 0) {
-            Toast.makeText(this, getString(R.string.field_missing), Toast.LENGTH_SHORT).show();
-            return false;
-        }
-
-        if (time == null || time.length() == 0) {
-            Toast.makeText(this, getString(R.string.field_missing), Toast.LENGTH_SHORT).show();
-            return false;
-        }*/
 
         if (userId == null || userId.length() == 0) {
             Toast.makeText(this, getString(R.string.user_id_missing), Toast.LENGTH_SHORT).show();
@@ -227,7 +210,7 @@ public class CreateNewMeasurement extends AppCompatActivity {
 
         SessionManager sessionManager = SessionManager.getInstance(this);
 
-        eliminateNearPoints.setText(eliminateNearPoints.getText().toString().length() == 0 ? "10" : eliminateNearPoints.getText().toString());
+        eliminateNearPoints.setText(eliminateNearPoints.getText().toString().length() == 0 ? "0" : eliminateNearPoints.getText().toString());
         timeBetweenPoints.setText(timeBetweenPoints.getText().toString().length() == 0 ? "10" : timeBetweenPoints.getText().toString());
 
         if (sessionManager.isLocalUser()) {

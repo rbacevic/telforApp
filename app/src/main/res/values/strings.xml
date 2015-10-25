@@ -10,6 +10,7 @@
     <string name="save_label">Snimi očitavanje</string>
     <string name="end_label">Kraj očitavanja</string>
     <string name="save_complate">Završi snimanje</string>
+    <string name="save_complated">Snimanje je uspesno zavrseno</string>
     <string name="logout_label">Odjavi se</string>
     <string name="exit_label">Izadji</string>
     <string name="start_save_label">Započni snimanje</string>

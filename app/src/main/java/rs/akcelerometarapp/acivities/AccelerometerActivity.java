@@ -145,6 +145,9 @@ public class AccelerometerActivity extends AppCompatActivity {
         locationUpdatesObservable.subscribe();
         mTempFilterList.clear();
         valueOfMaxRMS = 0;
+        xValueForMaxRMS = 0;
+        yValueForMaxRMS = 0;
+        zValueForMaxRMS = 0;
         samplesCount = 0;
     }
 
@@ -178,12 +181,6 @@ public class AccelerometerActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
-        Log.i(TAG, "MainActivity.onDestroy()");
-        super.onDestroy();
-    }
-
-    @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
     }
@@ -199,6 +196,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         if (mRecording) {
             stopMeasurement();
             if (saveKMLFile || saveRAWFile) {
+                Toast.makeText(this, getString(R.string.save_complated), Toast.LENGTH_LONG).show();
                 saveHistory();
             }
             updatableLocationSubscription.unsubscribe();
@@ -286,6 +284,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                 stopMeasurement();
                 if (saveRAWFile || saveKMLFile) {
                     saveHistory();
+                    Toast.makeText(this, getString(R.string.save_complated), Toast.LENGTH_LONG).show();
                 }
                 updatableLocationSubscription.unsubscribe();
                 finish();
@@ -573,6 +572,9 @@ public class AccelerometerActivity extends AppCompatActivity {
 
                 if (currentRmsXYZ >= valueOfMaxRMS) {
                     valueOfMaxRMS = currentRmsXYZ;
+                    xValueForMaxRMS = mCurrents[DATA_X];
+                    yValueForMaxRMS = mCurrents[DATA_Y];
+                    zValueForMaxRMS = mCurrents[DATA_Z];
                     getDetectionLocation();
                 }
 
@@ -591,6 +593,9 @@ public class AccelerometerActivity extends AppCompatActivity {
                                 lastRMSDate = new Date();
                                 mTempFilterList.clear();
                                 valueOfMaxRMS = 0;
+                                xValueForMaxRMS = 0;
+                                yValueForMaxRMS = 0;
+                                zValueForMaxRMS = 0;
                                 samplesCount = 0;
                                 Log.d(TAG,"Prostorna neosetljivost");
                             }
@@ -703,10 +708,13 @@ public class AccelerometerActivity extends AppCompatActivity {
         Log.d(TAG, "RMS X: " + rmsX);
         Log.d(TAG, "RMS Y: " + rmsY);
         Log.d(TAG, "RMS Z: " + rmsZ);
-        Log.d(TAG, "Max RMS X: " + maxRmsX);
-        Log.d(TAG, "Max RMS Y: " + maxRmsY);
-        Log.d(TAG, "Max RMS Z: " + maxRmsZ);
-        Log.d(TAG, "Max RMS XYZ: " + valueOfMaxRMS);
+        Log.d(TAG, "Apeak X: " + maxRmsX);
+        Log.d(TAG, "Apeak Y: " + maxRmsY);
+        Log.d(TAG, "Apeak Z: " + maxRmsZ);
+        Log.d(TAG, "Apeak XYZ: " + valueOfMaxRMS);
+        Log.d(TAG, "value of X for Apeak XYZ: " + xValueForMaxRMS);
+        Log.d(TAG, "value of Y for Apeak XYZ: " + yValueForMaxRMS);
+        Log.d(TAG, "value of Z for Apeak XYZ: " + zValueForMaxRMS);
         Log.d(TAG, "RMS XYZ: " + rmsXYZ);
         Log.d("latitude",locationOfMaxRms.getLatitude()+"");
         Log.d("longitude", locationOfMaxRms.getLongitude() + "");
@@ -714,29 +722,33 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         rmsTextView.setText("RMS: " + roundTwoDecimals(rmsXYZ));
 
-        if (rmsXYZ >= RMS_TRACEHOLD) {
-            if (recordPoint) {
-                createPoint("highlightPlacemark", locationOfMaxRms, rmsX,
-                        rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted,
-                        maxRmsX, maxRmsY, maxRmsZ);
-                String text = "Snimljena <font color='red'>NEUDOBNA</font> tacka !!!";
-                Toast.makeText(this, Html.fromHtml(text), Toast.LENGTH_SHORT).show();
-                fileUtils.appendResultsToCsvFile(rawFileOutputStream, mFilterHistory, mRawHistory);
-            }
-            lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_red));
-        } else {
-            if (recordPoint) {
-                createPoint("normalPlacemark", locationOfMaxRms, rmsX,
-                        rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted,
-                        maxRmsX, maxRmsY, maxRmsZ);
-                String text = "Snimljena <font color='green'>UDOBNA</font> tacka !!!";
-                Toast.makeText(this, Html.fromHtml(text), Toast.LENGTH_SHORT).show();
-                fileUtils.appendResultsToCsvFile(rawFileOutputStream, mFilterHistory, mRawHistory);
-            }
+        String markerType;
+        String comfortLevelMessage;
+        if (rmsXYZ < RMS_TRACEHOLD_FIRST) {
+            markerType = "greenPlacemark";
+            comfortLevelMessage = "Snimljena <font color='green'>UDOBNA</font> tacka !!!";
             lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_green));
+        } else if (RMS_TRACEHOLD_FIRST <= rmsXYZ  &&  rmsX <= RMS_TRACEHOLD_SECOND) {
+            markerType = "orangePlacemark";
+            comfortLevelMessage = "Snimljena <font color='orange'>SREDNJE UDOBNA</font> tacka !!!";
+            lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_yellow));
+        } else {
+            markerType = "highlightPlacemark";
+            comfortLevelMessage = "Snimljena <font color='red'>NEUDOBNA</font> tacka !!!";
+            lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_red));
         }
 
-        if (rmsXYZ < RMS_TRACEHOLD && !measureStarted && !recordPoint) {
+        if (recordPoint) {
+            createPoint(markerType, locationOfMaxRms, rmsX,
+                    rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted,
+                    maxRmsX, maxRmsY, maxRmsZ, xValueForMaxRMS, yValueForMaxRMS, zValueForMaxRMS);
+            Toast.makeText(this, Html.fromHtml(comfortLevelMessage), Toast.LENGTH_SHORT).show();
+            if (saveRAWFile) {
+                fileUtils.appendResultsToCsvFile(rawFileOutputStream, mFilterHistory, mRawHistory);
+            }
+        }
+
+        if (rmsXYZ < RMS_TRACEHOLD_FIRST && !measureStarted && !recordPoint) {
             measureStarted = true;
             Log.d(TAG, "start measuring");
             Toast.makeText(this, "Uredjaj kalibirsan, pocinje merenje !!!", Toast.LENGTH_LONG).show();
@@ -747,21 +759,27 @@ public class AccelerometerActivity extends AppCompatActivity {
         lastRMSDate = new Date();
         mTempFilterList.clear();
         valueOfMaxRMS = 0;
+        xValueForMaxRMS = 0;
+        yValueForMaxRMS = 0;
+        zValueForMaxRMS = 0;
         samplesCount = 0;
         locationUpdated = false;
     }
 
     private void createPoint(String pointStyle, Location location, double rmsX,
                              double rmsY, double rmsZ, double rmsXYZ, double maxRmsXYZ,
-                             String dateFormatted,  double maxRmsX, double maxRmsY, double maxRmsZ) {
+                             String dateFormatted,  double maxRmsX, double maxRmsY, double maxRmsZ,
+                             double xForApeakXYZ, double yForApeakXYZ, double zForApeakXYZ) {
 
         double speedInKmPerHour = (location.getSpeed() * 3600) / 1000;
 
         //dodaj tacku u kml
         if (saveKMLFile) {
-            String kmlelement = KmlUtils.createKMLPointString(pointStyle, kmlPointsCounter, rmsX, rmsY,
-                    rmsZ,rmsXYZ, maxRmsXYZ,dateFormatted, speedInKmPerHour, location.getLatitude(),
-                    location.getLongitude(), location.getAltitude(), maxRmsX, maxRmsY, maxRmsZ);
+            String kmlelement = KmlUtils.createKMLPointString(pointStyle, kmlPointsCounter, roundFourDecimals(rmsX),
+                    roundFourDecimals(rmsY), roundFourDecimals(rmsZ), roundFourDecimals(rmsXYZ), roundFourDecimals(maxRmsXYZ),
+                    dateFormatted, roundFourDecimals(speedInKmPerHour), location.getLatitude(), location.getLongitude(),
+                    roundFourDecimals(location.getAltitude()), roundFourDecimals(maxRmsX), roundFourDecimals(maxRmsY),
+                    roundFourDecimals(maxRmsZ), roundFourDecimals(xForApeakXYZ), roundFourDecimals(yForApeakXYZ), roundFourDecimals(zForApeakXYZ));
             fileUtils.appendResultsToKmlFile(kmlFileOutputStream, kmlelement);
         }
 
@@ -775,7 +793,10 @@ public class AccelerometerActivity extends AppCompatActivity {
             postParameters.add(new BasicNameValuePair("rmsZ", String.valueOf(rmsZ)));
             /*postParameters.add(new BasicNameValuePair("maxRmsX", String.valueOf(maxRmsX)));
             postParameters.add(new BasicNameValuePair("maxRmsY", String.valueOf(maxRmsY)));
-            postParameters.add(new BasicNameValuePair("maxRmsZ", String.valueOf(maxRmsZ)));*/
+            postParameters.add(new BasicNameValuePair("maxRmsZ", String.valueOf(maxRmsZ)));
+            postParameters.add(new BasicNameValuePair("x", String.valueOf(xForApeakXYZ)));
+            postParameters.add(new BasicNameValuePair("y", String.valueOf(yForApeakXYZ)));
+            postParameters.add(new BasicNameValuePair("z", String.valueOf(zForApeakXYZ)));*/
             postParameters.add(new BasicNameValuePair("aRms", String.valueOf(rmsXYZ)));
             postParameters.add(new BasicNameValuePair("aPeak", String.valueOf(maxRmsXYZ)));
             postParameters.add(new BasicNameValuePair("vreme", dateFormatted));
@@ -1135,6 +1156,11 @@ public class AccelerometerActivity extends AppCompatActivity {
         if (saveKMLFile) {
             fileUtils.finishEditingKmlFile(kmlFileOutputStream);
         }
+
+        mRawHistory.clear();
+        mFilterHistory.clear();
+        mHistory.clear();
+        mTempFilterList.clear();
     }
 
 
@@ -1152,7 +1178,8 @@ public class AccelerometerActivity extends AppCompatActivity {
     private static final int MENU_SENSOR_DELAY = (Menu.FIRST + 1);
     private static final int MENU_SAVE = (Menu.FIRST + 2);
 
-    private static final double RMS_TRACEHOLD = 0.315;
+    private static final double RMS_TRACEHOLD_FIRST = 0.315;
+    private static final double RMS_TRACEHOLD_SECOND = 0.63;
     private static final int UNIT_IN_G = 0;
     private static final int UNIT_IN_METRE_PER_SECOND_SQUARE = 1;
     private static final int HORIZONTAL_DEVICE_ORIENTATION = 0;
@@ -1228,5 +1255,8 @@ public class AccelerometerActivity extends AppCompatActivity {
     private LocationRequest locationRequest;
     private Location locationOfMaxRms;
     private double valueOfMaxRMS;
+    private double xValueForMaxRMS;
+    private double yValueForMaxRMS;
+    private double zValueForMaxRMS;
     private static final int REQUEST_CHECK_SETTINGS = 0;
 }
