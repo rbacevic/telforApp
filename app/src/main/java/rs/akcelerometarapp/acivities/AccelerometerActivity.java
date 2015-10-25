@@ -730,7 +730,7 @@ public class AccelerometerActivity extends AppCompatActivity {
             lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_green));
         } else if (RMS_TRACEHOLD_FIRST <= rmsXYZ  &&  rmsX <= RMS_TRACEHOLD_SECOND) {
             markerType = "orangePlacemark";
-            comfortLevelMessage = "Snimljena <font color='orange'>SREDNJE UDOBNA</font> tacka !!!";
+            comfortLevelMessage = "Snimljena <font color='yellow'>SREDNJE UDOBNA</font> tacka !!!";
             lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_yellow));
         } else {
             markerType = "highlightPlacemark";
