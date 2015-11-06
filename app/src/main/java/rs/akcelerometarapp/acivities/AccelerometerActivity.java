@@ -721,6 +721,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         Log.d("time", dateFormatted + "");
 
         rmsTextView.setText("RMS: " + roundTwoDecimals(rmsXYZ));
+        Log.d(TAG, "RMS XYZ rounded: " + roundTwoDecimals(rmsXYZ));
 
         String markerType;
         String comfortLevelMessage;
@@ -728,7 +729,7 @@ public class AccelerometerActivity extends AppCompatActivity {
             markerType = "greenPlacemark";
             comfortLevelMessage = "Snimljena <font color='green'>UDOBNA</font> tacka !!!";
             lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_green));
-        } else if (RMS_TRACEHOLD_FIRST <= rmsXYZ  &&  rmsX <= RMS_TRACEHOLD_SECOND) {
+        } else if (RMS_TRACEHOLD_FIRST <= rmsXYZ  &&  rmsXYZ <= RMS_TRACEHOLD_SECOND) {
             markerType = "orangePlacemark";
             comfortLevelMessage = "Snimljena <font color='yellow'>SREDNJE UDOBNA</font> tacka !!!";
             lightBulbImageView.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.light_bulb_yellow));
@@ -775,12 +776,35 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         //dodaj tacku u kml
         if (saveKMLFile) {
-            String kmlelement = KmlUtils.createKMLPointString(pointStyle, kmlPointsCounter, roundFourDecimals(rmsX),
+            String kmlelement = KmlUtils.createKMLPointString(pointStyle, kmlPointsCounter + 1, roundFourDecimals(rmsX),
                     roundFourDecimals(rmsY), roundFourDecimals(rmsZ), roundFourDecimals(rmsXYZ), roundFourDecimals(maxRmsXYZ),
                     dateFormatted, roundFourDecimals(speedInKmPerHour), location.getLatitude(), location.getLongitude(),
                     roundFourDecimals(location.getAltitude()), roundFourDecimals(maxRmsX), roundFourDecimals(maxRmsY),
                     roundFourDecimals(maxRmsZ), roundFourDecimals(xForApeakXYZ), roundFourDecimals(yForApeakXYZ), roundFourDecimals(zForApeakXYZ));
             fileUtils.appendResultsToKmlFile(kmlFileOutputStream, kmlelement);
+            kmlPointsCounter++;
+
+            if (rmsXYZ < RMS_TRACEHOLD_FIRST) {
+                numberOfGreenMarkers++;
+            } else if (RMS_TRACEHOLD_FIRST <= rmsXYZ  &&  rmsXYZ <= RMS_TRACEHOLD_SECOND) {
+                numberOfYellowMarkers++;
+            } else {
+                numberOfRedMarkers++;
+            }
+
+            averageRMSX += rmsX;
+            averageRMSY += rmsY;
+            averageRMSZ += rmsZ;
+            averageRMSXYZ += rmsXYZ;
+            averageMaxRMSXYZ += maxRmsXYZ;
+            averageMaxRMSX += maxRmsX;
+            averageMaxRMSY += maxRmsY;
+            averageMaxRMSZ += maxRmsZ;
+            averageX += xForApeakXYZ;
+            averageY += yForApeakXYZ;
+            averageZ += zForApeakXYZ;
+            averageSpeed += speedInKmPerHour;
+            averageAltitude += location.getAltitude();
         }
 
         if (!SessionManager.getInstance(this).isLocalUser()) {
@@ -819,7 +843,7 @@ public class AccelerometerActivity extends AppCompatActivity {
             }
         }
 
-        kmlPointsCounter++;
+
     }
 
     private void stopMeasurement() {
@@ -1154,6 +1178,20 @@ public class AccelerometerActivity extends AppCompatActivity {
 
 
         if (saveKMLFile) {
+
+            if (locationOfMaxRms != null) {
+                Log.d(TAG, "tacke " + numberOfGreenMarkers);
+                String finalKMLpoint = KmlUtils.createFinalKMLPointString(kmlPointsCounter, numberOfGreenMarkers,
+                        numberOfYellowMarkers, numberOfRedMarkers, averageRMSX/kmlPointsCounter, averageRMSY/kmlPointsCounter,
+                        averageRMSZ/kmlPointsCounter, averageRMSXYZ/kmlPointsCounter, averageMaxRMSXYZ/kmlPointsCounter,
+                        averageMaxRMSX/kmlPointsCounter, averageMaxRMSY/kmlPointsCounter, averageMaxRMSZ/kmlPointsCounter,
+                        averageX/kmlPointsCounter, averageY/kmlPointsCounter, averageZ/kmlPointsCounter,
+                        averageSpeed/kmlPointsCounter, averageAltitude/kmlPointsCounter,
+                        locationOfMaxRms.getLatitude(), locationOfMaxRms.getLongitude());
+
+                fileUtils.appendResultsToKmlFile(kmlFileOutputStream, finalKMLpoint);
+            }
+
             fileUtils.finishEditingKmlFile(kmlFileOutputStream);
         }
 
@@ -1209,7 +1247,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     private boolean saveKMLFile = false;
     private boolean saveRAWFile = false;
-    private int kmlPointsCounter = 1;
+    private int kmlPointsCounter = 0;
     private FileUtils fileUtils;
     private FileOutputStream rawFileOutputStream;
     private FileOutputStream kmlFileOutputStream;
@@ -1259,4 +1297,21 @@ public class AccelerometerActivity extends AppCompatActivity {
     private double yValueForMaxRMS;
     private double zValueForMaxRMS;
     private static final int REQUEST_CHECK_SETTINGS = 0;
+
+    private double averageRMSX = 0;
+    private double averageRMSY = 0;
+    private double averageRMSZ = 0;
+    private double averageRMSXYZ = 0;
+    private double averageMaxRMSXYZ = 0;
+    private double averageMaxRMSX = 0;
+    private double averageMaxRMSY = 0;
+    private double averageMaxRMSZ = 0;
+    private double averageX = 0;
+    private double averageY = 0;
+    private double averageZ = 0;
+    private double averageSpeed = 0;
+    private double averageAltitude = 0;
+    private int numberOfGreenMarkers = 0;
+    private int numberOfYellowMarkers = 0;
+    private int numberOfRedMarkers = 0;
 }

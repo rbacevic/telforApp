@@ -32,6 +32,13 @@ public class KmlUtils {
                 "<href>http://www.google.com/mapfiles/ms/micons/earthquake.png</href> \n"+
                 "</Icon> \n"+
                 "</IconStyle> \n"+
+                "</Style> \n" +
+                "<Style id='averagePlacemark'> \n"+
+                "<IconStyle> \n"+
+                "<Icon> \n"+
+                "<href>http://maps.google.com/mapfiles/kml/pal4/icon39.png</href> \n"+
+                "</Icon> \n"+
+                "</IconStyle> \n"+
                 "</Style> \n";
     }
 
@@ -58,6 +65,41 @@ public class KmlUtils {
                 "Y :"  + yValueForApeak + "\n" +
                 "Z :"  + zValueForApeak + "\n" +
                 "Vreme: " + dateFormatted + "\n" +
+                "]]>" +
+                "</description>\n" +
+                "\t<Point>\n" +
+                "\t\t<coordinates>"+ longitude +","+ latitude +","+0+ "</coordinates>\n" +
+                "\t</Point>\n" +
+                "\t</Placemark>\n";
+    }
+
+    public static String createFinalKMLPointString(int numberOfMarkers, int numberOfGreenMarkers, int numberOfYellowMarkers,
+                                                   int numberOfRedMarkers, double averageRMSX, double averageRMSY, double averageRMSZ,
+                                                   double averageRMSXYZ, double averageMaxRMSXYZ, double averageMaxRMSX, double averageMaxRMSY,
+                                                   double averageMaxRMSZ, double averageX, double averageY, double averageZ,
+                                                   double averageSpeed, double averageAltitude, double latitude, double longitude) {
+        return "\t<Placemark>\n" +
+                "<styleUrl>#" + "averagePlacemark" + "</styleUrl>"+
+                "\t<name>" + "Rezime merenja" + "</name>\n" +
+                "\t<description>"+ "<![CDATA["+
+                "Prosecna brzina [km/h]: " + averageSpeed + "\n"+
+                "Prosecna nadmorska visina: " + averageAltitude + "\n" +
+                "Ukupan broj tacaka: " + numberOfMarkers + "\n" +
+                "Ukupan broj udobnih tacaka: " + numberOfGreenMarkers + "\n" +
+                "Ukupan broj srednje udobnih tacaka: " + numberOfYellowMarkers + "\n" +
+                "Ukupan broj neudobnih tacaka: " + numberOfRedMarkers + "\n" +
+                "Prosecne vrednosti RMS-a: \n" +
+                "RMS X: " + averageRMSX + "\n" +
+                "RMS Y: " + averageRMSY + "\n" +
+                "RMS Z: " + averageRMSZ + "\n" +
+                "RMS XYZ: " + averageRMSXYZ + "\n" +
+                "Apeak X: " + averageMaxRMSX + "\n" +
+                "Apeak Y: " + averageMaxRMSY + "\n" +
+                "Apeak Z: " + averageMaxRMSZ + "\n" +
+                "Apeak XYZ: " + averageMaxRMSXYZ + "\n" +
+                "X :"  + averageX + "\n" +
+                "Y :"  + averageY + "\n" +
+                "Z :"  + averageZ + "\n" +
                 "]]>" +
                 "</description>\n" +
                 "\t<Point>\n" +

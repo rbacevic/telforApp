@@ -119,7 +119,7 @@ public class CreateNewMeasurement extends AppCompatActivity {
         unitsRadioGroup = (RadioGroup) findViewById(R.id.measure_unit);
         unitsRadioGroup.check(R.id.unit_in_metre_per_seconds_square);
         deviceOrientationRadioGroup = (RadioGroup) findViewById(R.id.phone_orientation);
-        deviceOrientationRadioGroup.check(R.id.horizontal_phone_orientation);
+        deviceOrientationRadioGroup.check(R.id.vertical_phone_orientation);
     }
 
     private void showExitDialog() {
@@ -290,7 +290,7 @@ public class CreateNewMeasurement extends AppCompatActivity {
     protected RadioGroup unitsRadioGroup;
     protected RadioGroup deviceOrientationRadioGroup;
     private int measureUnit = UNIT_IN_METRE_PER_SECOND_SQUARE;
-    private int deviceOrientation = HORIZONTAL_DEVICE_ORIENTATION;
+    private int deviceOrientation = VERICAL_DEVICE_ORIENTATION;
     protected AppCompatButton startMeasurement;
     protected ProgressDialog progressDialog;
     protected String userId;
