@@ -6,6 +6,7 @@
     <string name="accele_y_label">Y</string>
     <string name="accele_z_label">Z</string>
     <string name="accele_r_label">R</string>
+    <string name="accele_rms_label">RMS:</string>
     <string name="sensor_delay_label">Sensor Kasnjenje</string>
     <string name="save_label">Snimi očitavanje</string>
     <string name="end_label">Kraj očitavanja</string>

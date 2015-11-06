@@ -120,10 +120,25 @@
                             android:layout_marginRight="5dp"
                             android:src="@drawable/light_bulb_green"/>
 
-                        <TextView
-                            android:id="@+id/rms_value"
-                            style="@style/accele_value"
-                            android:layout_gravity="center"/>
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_gravity="center">
+
+                            <TextView
+                                style="@style/accele_value"
+                                android:layout_width="wrap_content"
+                                android:text="@string/accele_rms_label"
+                                android:layout_gravity="center"/>
+
+                            <TextView
+                                android:id="@+id/rms_value"
+                                android:layout_width="wrap_content"
+                                style="@style/accele_value"
+                                android:layout_gravity="center"/>
+
+                        </LinearLayout>
 
                     </LinearLayout>
 

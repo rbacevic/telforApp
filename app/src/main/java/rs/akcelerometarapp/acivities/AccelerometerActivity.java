@@ -414,7 +414,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         lightBulbImageView = (ImageView)findViewById(R.id.light_bulb_image);
         rmsTextView = (TextView)findViewById(R.id.rms_value);
-        rmsTextView.setText("RMS: 0.00");
+        rmsTextView.setText("0.00");
 
         //Rate filtera - Uzimanje vrednosti za TextView prikaz
         mFilterRateView = (TextView) findViewById(R.id.filter_rate_value);
@@ -693,6 +693,8 @@ public class AccelerometerActivity extends AppCompatActivity {
             rmsXYZ += (Math.pow(values[DATA_X], 2)
                     + Math.pow(values[DATA_Y], 2)
                     + Math.pow(values[DATA_Z], 2));
+
+            Log.d(TAG, "values " + values[DATA_X] + " " + values[DATA_Y] + " " + values[DATA_Z]);
         }
 
         rmsX = Math.sqrt(rmsX / samplesCount);
@@ -718,9 +720,11 @@ public class AccelerometerActivity extends AppCompatActivity {
         Log.d(TAG, "RMS XYZ: " + rmsXYZ);
         Log.d("latitude",locationOfMaxRms.getLatitude()+"");
         Log.d("longitude", locationOfMaxRms.getLongitude() + "");
+        Log.d("speed",locationOfMaxRms.getSpeed()+"");
+        Log.d("altitude", locationOfMaxRms.getAltitude() + "");
         Log.d("time", dateFormatted + "");
 
-        rmsTextView.setText("RMS: " + roundTwoDecimals(rmsXYZ));
+        rmsTextView.setText(roundTwoDecimals(rmsXYZ));
         Log.d(TAG, "RMS XYZ rounded: " + roundTwoDecimals(rmsXYZ));
 
         String markerType;
@@ -773,6 +777,16 @@ public class AccelerometerActivity extends AppCompatActivity {
                              double xForApeakXYZ, double yForApeakXYZ, double zForApeakXYZ) {
 
         double speedInKmPerHour = (location.getSpeed() * 3600) / 1000;
+
+        if (location.hasSpeed()) {
+            validLocationsWithSpeed++;
+            Log.d(TAG, "speed counter " + validLocationsWithSpeed);
+        }
+
+        if (location.hasAltitude()) {
+            validLocationsWithAltitude++;
+            Log.d(TAG, "altitude counter " + validLocationsWithAltitude);
+        }
 
         //dodaj tacku u kml
         if (saveKMLFile) {
@@ -1186,7 +1200,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                         averageRMSZ/kmlPointsCounter, averageRMSXYZ/kmlPointsCounter, averageMaxRMSXYZ/kmlPointsCounter,
                         averageMaxRMSX/kmlPointsCounter, averageMaxRMSY/kmlPointsCounter, averageMaxRMSZ/kmlPointsCounter,
                         averageX/kmlPointsCounter, averageY/kmlPointsCounter, averageZ/kmlPointsCounter,
-                        averageSpeed/kmlPointsCounter, averageAltitude/kmlPointsCounter,
+                        averageSpeed/validLocationsWithSpeed, averageAltitude/validLocationsWithAltitude,
                         locationOfMaxRms.getLatitude(), locationOfMaxRms.getLongitude());
 
                 fileUtils.appendResultsToKmlFile(kmlFileOutputStream, finalKMLpoint);
@@ -1314,4 +1328,6 @@ public class AccelerometerActivity extends AppCompatActivity {
     private int numberOfGreenMarkers = 0;
     private int numberOfYellowMarkers = 0;
     private int numberOfRedMarkers = 0;
+    private int validLocationsWithSpeed = 0;
+    private int validLocationsWithAltitude = 0;
 }

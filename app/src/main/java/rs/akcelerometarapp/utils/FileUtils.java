@@ -69,9 +69,9 @@ public class FileUtils {
         while (iterator.hasNext() && iteratorRaw.hasNext()) {
             float[] values = iterator.next();
             float[] valuesRaw = iteratorRaw.next();
-            for (int angle = 0; angle < 3; angle++) {
+            for (int angle = 0; angle < 4; angle++) {
                 csvData.append(String.valueOf(values[angle]));
-                if (angle < 3) {
+                if (angle < 4) {
                     csvData.append(",");
                 }
             }
