@@ -23,12 +23,13 @@ public class SessionManager {
         editor = pref.edit();
     }
 
-    public void createLoginSession(String username, String userId, boolean isLocalUser){
+    public void createLoginSession(String username, String userId, String serverURL, boolean isLocalUser){
 
         editor.putBoolean(IS_LOGIN, true);
         editor.putString(KEY_USERNAME, username);
         editor.putString(KEY_USER_ID, userId);
         editor.putBoolean(KEY_IS_LOCAL_USER, isLocalUser);
+        editor.putString(KEY_SEVER_URL, serverURL);
         editor.commit();
     }
 
@@ -38,6 +39,7 @@ public class SessionManager {
         editor.remove(KEY_USERNAME);
         editor.remove(KEY_USER_ID);
         editor.remove(KEY_IS_LOCAL_USER);
+        editor.remove(KEY_SEVER_URL);
         editor.commit();
     }
 
@@ -57,6 +59,10 @@ public class SessionManager {
         return pref.getString(KEY_USER_ID, null);
     }
 
+    public String getSeverUrl() {
+        return pref.getString(KEY_SEVER_URL, null);
+    }
+
     SharedPreferences pref;
     SharedPreferences.Editor editor;
     Context _context;
@@ -65,6 +71,7 @@ public class SessionManager {
     protected static final String IS_LOGIN = "IsLoggedIn";
     protected static final String KEY_USERNAME = "username";
     protected static final String KEY_USER_ID = "userID";
+    protected static final String KEY_SEVER_URL = "server_url";
     protected static final String KEY_IS_LOCAL_USER = "isLocalUser";
     int PRIVATE_MODE = 0;
 }

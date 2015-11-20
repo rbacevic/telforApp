@@ -213,6 +213,21 @@ public class CreateNewMeasurement extends AppCompatActivity {
         eliminateNearPoints.setText(eliminateNearPoints.getText().toString().length() == 0 ? "0" : eliminateNearPoints.getText().toString());
         timeBetweenPoints.setText(timeBetweenPoints.getText().toString().length() == 0 ? "10" : timeBetweenPoints.getText().toString());
 
+        int timeConstant = 10;
+        int distanceConstant = 0;
+
+        try {
+            distanceConstant = Integer.parseInt(eliminateNearPoints.getText().toString());
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            timeConstant = Integer.parseInt(timeBetweenPoints.getText().toString());
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        }
+
         if (sessionManager.isLocalUser()) {
             Intent newIntent = new Intent(this, AccelerometerActivity.class);
             Bundle bundle = new Bundle();
@@ -222,8 +237,8 @@ public class CreateNewMeasurement extends AppCompatActivity {
             bundle.putString("imeMerenja", measurementName);
             bundle.putBoolean("saveKML", saveKMLFile.isChecked());
             bundle.putBoolean("saveRaw", saveRawFile.isChecked());
-            bundle.putInt("eliminateNearPoints", Integer.valueOf(eliminateNearPoints.getText().toString()));
-            bundle.putInt("timeBetweenPoints", Integer.valueOf(timeBetweenPoints.getText().toString()));
+            bundle.putInt("eliminateNearPoints", distanceConstant);
+            bundle.putInt("timeBetweenPoints", timeConstant);
             bundle.putInt("deviceOrientation", deviceOrientation);
             bundle.putInt("measureUnit", measureUnit);
             newIntent.putExtras(bundle);
@@ -261,8 +276,8 @@ public class CreateNewMeasurement extends AppCompatActivity {
                     bundle.putString("imeMerenja", measurementName);
                     bundle.putBoolean("saveKML", saveKMLFile.isChecked());
                     bundle.putBoolean("saveRaw", saveRawFile.isChecked());
-                    bundle.putInt("eliminateNearPoints", Integer.valueOf(eliminateNearPoints.getText().toString()));
-                    bundle.putInt("timeBetweenPoints", Integer.valueOf(timeBetweenPoints.getText().toString()));
+                    bundle.putInt("eliminateNearPoints", distanceConstant);
+                    bundle.putInt("timeBetweenPoints", timeConstant);
                     bundle.putInt("deviceOrientation", deviceOrientation);
                     bundle.putInt("measureUnit", measureUnit);
                     newIntent.putExtras(bundle);

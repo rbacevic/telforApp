@@ -69,6 +69,7 @@ public class FileUtils {
         while (iterator.hasNext() && iteratorRaw.hasNext()) {
             float[] values = iterator.next();
             float[] valuesRaw = iteratorRaw.next();
+            //put 7 for low pass filter data
             for (int angle = 0; angle < 4; angle++) {
                 csvData.append(String.valueOf(values[angle]));
                 if (angle < 4) {

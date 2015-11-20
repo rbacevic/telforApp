@@ -28,8 +28,10 @@
     <string name="register_button_title">Registrujte se</string>
     <string name="login_username">Korisnicko ime</string>
     <string name="login_password">Lozinka</string>
+    <string name="server_url">Server URL</string>
     <string name="username_missing">Niste uneli korisnicko ime</string>
     <string name="password_missing">Niste uneli lozinku</string>
+    <string name="server_url_missing">Niste uneli Server URL</string>
 
     <!-- Register Activity -->
     <string name="register_title">Registracija</string>

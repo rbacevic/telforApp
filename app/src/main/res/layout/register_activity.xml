@@ -131,6 +131,19 @@
                 android:textColor="@android:color/black"
                 />
 
+            <android.support.v7.widget.AppCompatEditText
+                android:id="@+id/server_url"
+                android:layout_marginTop="2dp"
+                android:layout_width="fill_parent"
+                android:layout_height="40dp"
+                android:singleLine="true"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:inputType="text"
+                android:hint="@string/server_url"
+                android:textColor="@android:color/black"
+                />
+
         </LinearLayout>
 
         <android.support.v7.widget.AppCompatButton

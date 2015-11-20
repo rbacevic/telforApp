@@ -42,6 +42,7 @@ public class LoginActivity extends AppCompatActivity {
         setAllListeners();
 
         if (SessionManager.getInstance(this).isLoggedIn()) {
+            URLS.setBaseUrl(SessionManager.getInstance(this).getSeverUrl());
             Intent newIntent = new Intent(this, CreateNewMeasurement.class);
             startActivity(newIntent);
         }
@@ -52,10 +53,13 @@ public class LoginActivity extends AppCompatActivity {
 
         usernameEditText = (AppCompatEditText)findViewById(R.id.login_username);
         passwordEditText = (AppCompatEditText)findViewById(R.id.login_password);
+        serverURLEditText = (AppCompatEditText)findViewById(R.id.server_url);
         loginButton = (AppCompatButton)findViewById(R.id.login_button);
         registerButton = (AppCompatButton)findViewById(R.id.register_button);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        serverURLEditText.setText(URLS.DEFAULT_URL);
     }
 
     protected void setAllListeners () {
@@ -67,6 +71,7 @@ public class LoginActivity extends AppCompatActivity {
 
         String username = usernameEditText.getText().toString();
         String password = passwordEditText.getText().toString();
+        String serverURL = serverURLEditText.getText().toString();
 
         if (username == null || username.length() == 0) {
             Toast.makeText(this, getString(R.string.username_missing), Toast.LENGTH_SHORT).show();
@@ -78,6 +83,11 @@ public class LoginActivity extends AppCompatActivity {
             return false;
         }
 
+        if (serverURL == null || serverURL.length() == 0) {
+            Toast.makeText(this, getString(R.string.server_url_missing), Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
         return true;
     }
 
@@ -86,8 +96,10 @@ public class LoginActivity extends AppCompatActivity {
         public void onClick(View v) {
 
             if (validateFields()) {
+                URLS.setBaseUrl(serverURLEditText.getText().toString());
                 login(usernameEditText.getText().toString(),
-                        passwordEditText.getText().toString());
+                        passwordEditText.getText().toString(),
+                        serverURLEditText.getText().toString());
             }
         }
     };
@@ -101,13 +113,13 @@ public class LoginActivity extends AppCompatActivity {
         }
     };
 
-    protected void login(String username, String password) {
+    protected void login(String username, String password, String serverURL) {
 
         ProgressDialogUtils.showProgressDialog(progressDialog);
 
         if (username.equalsIgnoreCase("test") && password.equalsIgnoreCase("test")) {
             ProgressDialogUtils.dismissProgressDialog(progressDialog);
-            SessionManager.getInstance(this).createLoginSession(username, password, true);
+            SessionManager.getInstance(this).createLoginSession(username, password, serverURL, true);
             Toast.makeText(this, "Ulogovani ste kao lokalni korisnik", Toast.LENGTH_SHORT).show();
             Intent newIntent = new Intent(this, CreateNewMeasurement.class);
             startActivity(newIntent);
@@ -132,7 +144,7 @@ public class LoginActivity extends AppCompatActivity {
                     Toast.makeText(this, "Uspesna verifikacija", Toast.LENGTH_SHORT).show();
 
                     ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                    SessionManager.getInstance(this).createLoginSession(username, res, false);
+                    SessionManager.getInstance(this).createLoginSession(username, res, serverURL, false);
                     Intent newIntent = new Intent(this, CreateNewMeasurement.class);
                     /* Bundle bundle = new Bundle();
                      bundle.putString("id", res);
@@ -155,6 +167,7 @@ public class LoginActivity extends AppCompatActivity {
 
     protected AppCompatEditText usernameEditText;
     protected AppCompatEditText passwordEditText;
+    protected AppCompatEditText serverURLEditText;
     protected AppCompatButton loginButton;
     protected AppCompatButton registerButton;
     protected ProgressDialog progressDialog;

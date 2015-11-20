@@ -44,10 +44,13 @@ public class RegisterActivity extends AppCompatActivity {
         nameEditText = (AppCompatEditText)findViewById(R.id.register_name);
         lastnameEditText = (AppCompatEditText)findViewById(R.id.register_last_name);
         emailEditText = (AppCompatEditText)findViewById(R.id.register_email);
+        serverURLEditText = (AppCompatEditText)findViewById(R.id.server_url);
         registerButton = (AppCompatButton)findViewById(R.id.register_button);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setHomeButtonEnabled(true);
+
+        serverURLEditText.setText(URLS.DEFAULT_URL);
     }
 
     protected void setAllListeners () {
@@ -62,7 +65,7 @@ public class RegisterActivity extends AppCompatActivity {
         String name = nameEditText.getText().toString();
         String lastname = lastnameEditText.getText().toString();
         String email = emailEditText.getText().toString();
-
+        String serverURL = serverURLEditText.getText().toString();
 
         if (username == null || username.length() == 0) {
             Toast.makeText(this, getString(R.string.username_missing), Toast.LENGTH_SHORT).show();
@@ -99,6 +102,11 @@ public class RegisterActivity extends AppCompatActivity {
             return false;
         }
 
+        if (serverURL == null || serverURL.length() == 0) {
+            Toast.makeText(this, getString(R.string.server_url_missing), Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
         return true;
     }
 
@@ -107,6 +115,7 @@ public class RegisterActivity extends AppCompatActivity {
         public void onClick(View v) {
 
             if (validateFields()) {
+                URLS.setBaseUrl(serverURLEditText.getText().toString());
                 register(usernameEditText.getText().toString(),
                         passwordEditText.getText().toString(),
                         nameEditText.getText().toString(),
@@ -174,6 +183,7 @@ public class RegisterActivity extends AppCompatActivity {
     protected AppCompatEditText nameEditText;
     protected AppCompatEditText lastnameEditText;
     protected AppCompatEditText emailEditText;
+    protected AppCompatEditText serverURLEditText;
     protected AppCompatButton registerButton;
     protected ProgressDialog progressDialog;
     protected Toolbar toolbar;

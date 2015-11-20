@@ -519,7 +519,14 @@ public class AccelerometerActivity extends AppCompatActivity {
                     value -= mLowPassFilters[angle];
                     break;
             }
-
+            //uncomment for low pass filter data
+            /*if (angle == 0) {
+                mCurrents[4] = mLowPassFilters[angle];
+            } else if (angle == 1) {
+                mCurrents[5] = mLowPassFilters[angle];
+            } else if (angle == 2) {
+                mCurrents[6] = mLowPassFilters[angle];
+            }*/
             mCurrents[angle] = value;
             mAccValueViews[angle].setText(roundFourDecimals(value));
         }
@@ -831,17 +838,17 @@ public class AccelerometerActivity extends AppCompatActivity {
             postParameters.add(new BasicNameValuePair("rmsZ", String.valueOf(rmsZ)));
             /*postParameters.add(new BasicNameValuePair("maxRmsX", String.valueOf(maxRmsX)));
             postParameters.add(new BasicNameValuePair("maxRmsY", String.valueOf(maxRmsY)));
-            postParameters.add(new BasicNameValuePair("maxRmsZ", String.valueOf(maxRmsZ)));
+            postParameters.add(new BasicNameValuePair("maxRmsZ", String.valueOf(maxRmsZ)));*/
             postParameters.add(new BasicNameValuePair("x", String.valueOf(xForApeakXYZ)));
             postParameters.add(new BasicNameValuePair("y", String.valueOf(yForApeakXYZ)));
-            postParameters.add(new BasicNameValuePair("z", String.valueOf(zForApeakXYZ)));*/
+            postParameters.add(new BasicNameValuePair("z", String.valueOf(zForApeakXYZ)));
             postParameters.add(new BasicNameValuePair("aRms", String.valueOf(rmsXYZ)));
             postParameters.add(new BasicNameValuePair("aPeak", String.valueOf(maxRmsXYZ)));
             postParameters.add(new BasicNameValuePair("vreme", dateFormatted));
             postParameters.add(new BasicNameValuePair("brzina", String.valueOf(speedInKmPerHour)));
             postParameters.add(new BasicNameValuePair("longitude", String.valueOf(location.getLongitude())));
             postParameters.add(new BasicNameValuePair("latitude", String.valueOf(location.getLatitude())));
-            //postParameters.add(new BasicNameValuePair("opis", measurementDescription));
+         //   postParameters.add(new BasicNameValuePair("opis", measurementDescription));
 
             String response = null;
 
@@ -1196,11 +1203,13 @@ public class AccelerometerActivity extends AppCompatActivity {
             if (locationOfMaxRms != null) {
                 Log.d(TAG, "tacke " + numberOfGreenMarkers);
                 String finalKMLpoint = KmlUtils.createFinalKMLPointString(kmlPointsCounter, numberOfGreenMarkers,
-                        numberOfYellowMarkers, numberOfRedMarkers, averageRMSX/kmlPointsCounter, averageRMSY/kmlPointsCounter,
-                        averageRMSZ/kmlPointsCounter, averageRMSXYZ/kmlPointsCounter, averageMaxRMSXYZ/kmlPointsCounter,
-                        averageMaxRMSX/kmlPointsCounter, averageMaxRMSY/kmlPointsCounter, averageMaxRMSZ/kmlPointsCounter,
-                        averageX/kmlPointsCounter, averageY/kmlPointsCounter, averageZ/kmlPointsCounter,
-                        averageSpeed/validLocationsWithSpeed, averageAltitude/validLocationsWithAltitude,
+                        numberOfYellowMarkers, numberOfRedMarkers, roundFourDecimals(averageRMSX/kmlPointsCounter),
+                        roundFourDecimals(averageRMSY/kmlPointsCounter), roundFourDecimals(averageRMSZ/kmlPointsCounter),
+                        roundFourDecimals(averageRMSXYZ/kmlPointsCounter), roundFourDecimals(averageMaxRMSXYZ/kmlPointsCounter),
+                        roundFourDecimals(averageMaxRMSX/kmlPointsCounter), roundFourDecimals(averageMaxRMSY/kmlPointsCounter),
+                        roundFourDecimals(averageMaxRMSZ/kmlPointsCounter), roundFourDecimals(averageX/kmlPointsCounter),
+                        roundFourDecimals(averageY / kmlPointsCounter), roundFourDecimals(averageZ / kmlPointsCounter),
+                        roundFourDecimals(averageSpeed / validLocationsWithSpeed), roundFourDecimals(averageAltitude / validLocationsWithAltitude),
                         locationOfMaxRms.getLatitude(), locationOfMaxRms.getLongitude());
 
                 fileUtils.appendResultsToKmlFile(kmlFileOutputStream, finalKMLpoint);
@@ -1237,7 +1246,7 @@ public class AccelerometerActivity extends AppCompatActivity {
     private static final int HORIZONTAL_DEVICE_ORIENTATION = 0;
     private static final int VERICAL_DEVICE_ORIENTATION = 1;
 
-    private float[] mCurrents = new float[4];
+    private float[] mCurrents = new float[7];
     private ConcurrentLinkedQueue<float[]> mHistory = new ConcurrentLinkedQueue<>();
     private ConcurrentLinkedQueue<float[]> mRawHistory = new ConcurrentLinkedQueue<>();
     private ConcurrentLinkedQueue<float[]> mFilterHistory = new ConcurrentLinkedQueue<>();

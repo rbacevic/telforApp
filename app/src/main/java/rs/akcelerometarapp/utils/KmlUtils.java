@@ -74,10 +74,10 @@ public class KmlUtils {
     }
 
     public static String createFinalKMLPointString(int numberOfMarkers, int numberOfGreenMarkers, int numberOfYellowMarkers,
-                                                   int numberOfRedMarkers, double averageRMSX, double averageRMSY, double averageRMSZ,
-                                                   double averageRMSXYZ, double averageMaxRMSXYZ, double averageMaxRMSX, double averageMaxRMSY,
-                                                   double averageMaxRMSZ, double averageX, double averageY, double averageZ,
-                                                   double averageSpeed, double averageAltitude, double latitude, double longitude) {
+                                                   int numberOfRedMarkers, String averageRMSX, String averageRMSY, String averageRMSZ,
+                                                   String averageRMSXYZ, String averageMaxRMSXYZ, String averageMaxRMSX, String averageMaxRMSY,
+                                                   String averageMaxRMSZ, String averageX, String averageY, String averageZ,
+                                                   String averageSpeed, String averageAltitude, double latitude, double longitude) {
         return "\t<Placemark>\n" +
                 "<styleUrl>#" + "averagePlacemark" + "</styleUrl>"+
                 "\t<name>" + "Rezime merenja" + "</name>\n" +

@@ -48,7 +48,11 @@
 
                         <TextView
                             android:id="@+id/accele_x_value"
-                            style="@style/accele_value"/>
+                            style="@style/accele_value"
+                            android:paddingLeft="3dp"
+                            android:paddingRight="3dp"
+                            android:maxLines="1"
+                            android:textColor="@color/zero_line"/>
 
                     </LinearLayout>
 
@@ -66,7 +70,11 @@
 
                         <TextView
                             android:id="@+id/accele_y_value"
-                            style="@style/accele_value"/>
+                            style="@style/accele_value"
+                            android:paddingLeft="3dp"
+                            android:paddingRight="3dp"
+                            android:maxLines="1"
+                            android:textColor="@color/zero_line"/>
 
                     </LinearLayout>
 
@@ -84,7 +92,11 @@
 
                         <TextView
                             android:id="@+id/accele_z_value"
-                            style="@style/accele_value"/>
+                            style="@style/accele_value"
+                            android:paddingLeft="3dp"
+                            android:paddingRight="3dp"
+                            android:maxLines="1"
+                            android:textColor="@color/zero_line"/>
 
                     </LinearLayout>
 
@@ -102,7 +114,11 @@
 
                         <TextView
                             android:id="@+id/accele_r_value"
-                            style="@style/accele_value"/>
+                            style="@style/accele_value"
+                            android:paddingLeft="3dp"
+                            android:paddingRight="3dp"
+                            android:maxLines="1"
+                            android:textColor="@color/zero_line"/>
 
                     </LinearLayout>
 
@@ -130,13 +146,16 @@
                                 style="@style/accele_value"
                                 android:layout_width="wrap_content"
                                 android:text="@string/accele_rms_label"
-                                android:layout_gravity="center"/>
+                                android:layout_gravity="center"
+                                android:textColor="@color/zero_line"/>
 
                             <TextView
                                 android:id="@+id/rms_value"
                                 android:layout_width="wrap_content"
                                 style="@style/accele_value"
-                                android:layout_gravity="center"/>
+                                android:layout_gravity="center"
+                                android:maxLines="1"
+                                android:textColor="@color/zero_line"/>
 
                         </LinearLayout>
 
@@ -149,46 +168,80 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:weightSum="2">
 
-                    <RadioGroup
-                        android:id="@+id/pass_filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="fill_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_weight="1">
 
-                        <RadioButton
-                            android:id="@+id/pass_filter_raw"
-                            style="@style/pass_filter"
-                            android:text="RAW"
-                          />
+                        <RadioGroup
+                            android:id="@+id/pass_filter"
+                            android:layout_width="fill_parent"
+                            android:layout_height="fill_parent"
+                            android:orientation="horizontal"
+                            android:weightSum="3">
 
-                        <RadioButton
-                            android:id="@+id/pass_filter_low"
-                            style="@style/pass_filter"
-                            android:text="LOW"
-                            />
+                            <RadioButton
+                                android:id="@+id/pass_filter_raw"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                style="@style/pass_filter"
+                                android:text="RAW"
+                                android:textColor="@color/zero_line"
+                                />
 
-                        <RadioButton
-                            android:id="@+id/pass_filter_high"
-                            style="@style/pass_filter"
-                            android:text="HIGH"
-                            />
+                            <RadioButton
+                                android:id="@+id/pass_filter_low"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                style="@style/pass_filter"
+                                android:text="LOW"
+                                android:textColor="@color/zero_line"
+                                />
 
-                    </RadioGroup>
+                            <RadioButton
+                                android:id="@+id/pass_filter_high"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                style="@style/pass_filter"
+                                android:text="HIGH"
+                                android:textColor="@color/zero_line"
+                                />
 
-                    <TextView
-                        android:id="@+id/filter_rate_value"
-                        android:layout_width="40dp"
-                        android:layout_height="wrap_content"
-                        android:gravity="end"
-                        android:paddingLeft="3dp"
-                        android:paddingRight="3dp"/>
+                        </RadioGroup>
 
-                    <SeekBar
-                        android:id="@+id/filter_rate"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="fill_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_weight="1">
+
+                        <TextView
+                            android:id="@+id/filter_rate_value"
+                            android:layout_width="40dp"
+                            android:layout_height="fill_parent"
+                            android:gravity="center"
+                            android:paddingLeft="3dp"
+                            android:paddingRight="3dp"
+                            android:textColor="@color/zero_line"/>
+
+                        <SeekBar
+                            android:id="@+id/filter_rate"
+                            android:layout_width="match_parent"
+                            android:layout_height="fill_parent"
+                            android:layout_gravity="center"/>
+
+                    </LinearLayout>
 
                 </LinearLayout>
 

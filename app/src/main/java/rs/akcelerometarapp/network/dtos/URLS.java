@@ -5,13 +5,22 @@ package rs.akcelerometarapp.network.dtos;
  */
 public class URLS {
 
-    public static final String      BASE_URL                         = "http://192.168.1.3:8080/";
+    public static String BASE_URL;
+    public static final String      DEFAULT_URL                      = "http://csl.ftn.kg.ac.rs:8088/VibroMap";
                                                                     //AndromapWebApp/ServletAndroid"
-    protected static final String   URL_REGISTER                     = "Andromap/ServletAndroid";
-    protected static final String   URL_LOGIN                        = "Andromap/ServletAndroid";
-    protected static final String   URL_CREATE_MEASUREMENT           = "Andromap/ServletMerenjeAndroid";
-    protected static final String   URL_ADD_POINT                    = "Andromap/ServletUpisTacke";
-    protected static final String   URL_STOP_MEASUREMENT             = "Andromap/ServletMerenjeAndroid";
+    protected static final String   URL_REGISTER                     = "/ServletAndroid";
+    protected static final String   URL_LOGIN                        = "/ServletAndroid";
+    protected static final String   URL_CREATE_MEASUREMENT           = "/ServletMerenjeAndroid";
+    protected static final String   URL_ADD_POINT                    = "/ServletUpisTacke";
+    protected static final String   URL_STOP_MEASUREMENT             = "/ServletMerenjeAndroid";
+
+    public static String getBaseUrl() {
+        return BASE_URL;
+    }
+
+    public static void setBaseUrl(String baseUrl) {
+        BASE_URL = baseUrl;
+    }
 
     public static String RegisterURL() {
         return BASE_URL + URL_REGISTER;
