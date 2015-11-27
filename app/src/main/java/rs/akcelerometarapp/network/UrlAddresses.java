@@ -1,13 +1,12 @@
-package rs.akcelerometarapp.network.dtos;
+package rs.akcelerometarapp.network;
 
 /**
- * Created by RADEEE on 10-Oct-15.
+ * Created by RADEEE on 27-Nov-15.
  */
-public class URLS {
-
+public class UrlAddresses {
     public static String BASE_URL;
     public static final String      DEFAULT_URL                      = "http://csl.ftn.kg.ac.rs:8088/VibroMap";
-                                                                    //AndromapWebApp/ServletAndroid"
+
     protected static final String   URL_REGISTER                     = "/ServletAndroid";
     protected static final String   URL_LOGIN                        = "/ServletAndroid";
     protected static final String   URL_CREATE_MEASUREMENT           = "/ServletMerenjeAndroid";

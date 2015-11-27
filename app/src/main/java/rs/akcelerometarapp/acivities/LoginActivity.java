@@ -11,7 +11,6 @@ import android.support.v7.widget.AppCompatEditText;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 
-import android.widget.TextView;
 import android.widget.Toast;
 
 import org.apache.http.NameValuePair;
@@ -21,7 +20,7 @@ import java.util.ArrayList;
 
 import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
-import rs.akcelerometarapp.network.dtos.URLS;
+import rs.akcelerometarapp.network.UrlAddresses;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
 import rs.akcelerometarapp.utils.SessionManager;
 
@@ -42,7 +41,7 @@ public class LoginActivity extends AppCompatActivity {
         setAllListeners();
 
         if (SessionManager.getInstance(this).isLoggedIn()) {
-            URLS.setBaseUrl(SessionManager.getInstance(this).getSeverUrl());
+            UrlAddresses.setBaseUrl(SessionManager.getInstance(this).getSeverUrl());
             Intent newIntent = new Intent(this, CreateNewMeasurement.class);
             startActivity(newIntent);
         }
@@ -59,7 +58,7 @@ public class LoginActivity extends AppCompatActivity {
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        serverURLEditText.setText(URLS.DEFAULT_URL);
+        serverURLEditText.setText(UrlAddresses.DEFAULT_URL);
     }
 
     protected void setAllListeners () {
@@ -96,7 +95,7 @@ public class LoginActivity extends AppCompatActivity {
         public void onClick(View v) {
 
             if (validateFields()) {
-                URLS.setBaseUrl(serverURLEditText.getText().toString());
+                UrlAddresses.setBaseUrl(serverURLEditText.getText().toString());
                 login(usernameEditText.getText().toString(),
                         passwordEditText.getText().toString(),
                         serverURLEditText.getText().toString());
@@ -133,7 +132,7 @@ public class LoginActivity extends AppCompatActivity {
 
             try {
 
-                response = CustomHttpClient.executeHttpPost(URLS.LoginURL(), postParameters);
+                response = CustomHttpClient.executeHttpPost(UrlAddresses.LoginURL(), postParameters);
                 String res=response.toString();
                 res= res.replaceAll("\\s+", "");
 
@@ -163,7 +162,6 @@ public class LoginActivity extends AppCompatActivity {
             }
         }
     }
-
 
     protected AppCompatEditText usernameEditText;
     protected AppCompatEditText passwordEditText;

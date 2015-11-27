@@ -1,11 +1,9 @@
 package rs.akcelerometarapp.acivities;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
@@ -15,9 +13,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,7 +25,7 @@ import java.util.ArrayList;
 
 import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
-import rs.akcelerometarapp.network.dtos.URLS;
+import rs.akcelerometarapp.network.UrlAddresses;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
 import rs.akcelerometarapp.utils.SessionManager;
 
@@ -256,7 +252,7 @@ public class CreateNewMeasurement extends AppCompatActivity {
 
             try {
 
-                response = CustomHttpClient.executeHttpPost(URLS.CreateMesurementURL(), postParameters);
+                response = CustomHttpClient.executeHttpPost(UrlAddresses.CreateMesurementURL(), postParameters);
                 String res = response.toString();
                 res= res.replaceAll("\\s+", "");
 

@@ -58,7 +58,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import pl.charmas.android.reactivelocation.ReactiveLocationProvider;
 import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
-import rs.akcelerometarapp.network.dtos.URLS;
+import rs.akcelerometarapp.network.UrlAddresses;
 import rs.akcelerometarapp.utils.FileUtils;
 import rs.akcelerometarapp.utils.KmlUtils;
 import rs.akcelerometarapp.utils.SessionManager;
@@ -325,10 +325,10 @@ public class AccelerometerActivity extends AppCompatActivity {
         }
     }
 
-    private LocationRequest locationRequest() {
+    private final LocationRequest locationRequest() {
         return LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setNumUpdates(1)
+                .setNumUpdates(5)
                 .setInterval(100);
     }
 
@@ -854,7 +854,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
             try {
 
-                response = CustomHttpClient.executeHttpPost(URLS.AddPointURL(), postParameters);
+                response = CustomHttpClient.executeHttpPost(UrlAddresses.AddPointURL(), postParameters);
                 String res = response.toString();
                 res = res.replaceAll("\\s+", "");
                 Log.d(TAG, res);
@@ -879,7 +879,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
             try {
 
-                response = CustomHttpClient.executeHttpPost(URLS.StopMesurementURL(), postParameters);
+                response = CustomHttpClient.executeHttpPost(UrlAddresses.StopMesurementURL(), postParameters);
                 String res = response.toString();
                 res= res.replaceAll("\\s+", "");
 
@@ -1225,7 +1225,7 @@ public class AccelerometerActivity extends AppCompatActivity {
     }
 
 
-    private static final String TAG = "Akcelerometar_AP";
+    private static final String TAG = "AkcelerometerActivity";
 
     private static final int DATA_X = 0;
     private static final int DATA_Y = 1;

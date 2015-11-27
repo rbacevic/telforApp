@@ -2,7 +2,6 @@ package rs.akcelerometarapp.acivities;
 
 
 import android.app.ProgressDialog;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatButton;
@@ -18,7 +17,7 @@ import java.util.ArrayList;
 
 import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.network.CustomHttpClient;
-import rs.akcelerometarapp.network.dtos.URLS;
+import rs.akcelerometarapp.network.UrlAddresses;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
 
 /**
@@ -50,7 +49,7 @@ public class RegisterActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setHomeButtonEnabled(true);
 
-        serverURLEditText.setText(URLS.DEFAULT_URL);
+        serverURLEditText.setText(UrlAddresses.DEFAULT_URL);
     }
 
     protected void setAllListeners () {
@@ -115,7 +114,7 @@ public class RegisterActivity extends AppCompatActivity {
         public void onClick(View v) {
 
             if (validateFields()) {
-                URLS.setBaseUrl(serverURLEditText.getText().toString());
+                UrlAddresses.setBaseUrl(serverURLEditText.getText().toString());
                 register(usernameEditText.getText().toString(),
                         passwordEditText.getText().toString(),
                         nameEditText.getText().toString(),
@@ -142,7 +141,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         try {
 
-            response = CustomHttpClient.executeHttpPost(URLS.RegisterURL(), postParameters);
+            response = CustomHttpClient.executeHttpPost(UrlAddresses.RegisterURL(), postParameters);
             String res = response.toString();
             res= res.replaceAll("\\s+", "");
 
