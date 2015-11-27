@@ -1,12 +1,9 @@
 package rs.akcelerometarapp.acivities;
 
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
@@ -57,6 +54,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import pl.charmas.android.reactivelocation.ReactiveLocationProvider;
 import rs.akcelerometarapp.R;
+import rs.akcelerometarapp.components.GraphView;
 import rs.akcelerometarapp.network.CustomHttpClient;
 import rs.akcelerometarapp.network.UrlAddresses;
 import rs.akcelerometarapp.utils.FileUtils;
@@ -87,9 +85,6 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         // Održavanje aktivnog ekrana da ne ide u sleep
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        // Skrivanje Title-a
-//		requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         // Setovanje layouta
         setContentView(R.layout.activity_main);
@@ -210,14 +205,10 @@ public class AccelerometerActivity extends AppCompatActivity {
             case KeyEvent.ACTION_DOWN:
                 switch (event.getKeyCode()) {
                     case KeyEvent.KEYCODE_VOLUME_UP:
-                        //Inkrement prikaza dijagrama
-                        mGraphScale++;
+                        mGraphView.increaseGraphScale();
                         return true;
                     case KeyEvent.KEYCODE_VOLUME_DOWN:
-                        if (mGraphScale > 1) {
-                            // Dekrement prikaza dijagrama
-                            mGraphScale--;
-                        }
+                        mGraphView.decreaseGraphScale();
                         return true;
                     case KeyEvent.KEYCODE_FOCUS:
                         return true;
@@ -243,14 +234,14 @@ public class AccelerometerActivity extends AppCompatActivity {
         //Mogucnost pomeranja grafika po Y osi istog
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                mTouchOffset = event.getY();
+                mGraphView.setmTouchOffset(event.getY());
                 break;
             case MotionEvent.ACTION_UP:
-                mZeroLineY += mZeroLineYOffset;
-                mZeroLineYOffset = 0;
+                mGraphView.setmZeroLineY(mGraphView.getmZeroLineY() + mGraphView.getmZeroLineYOffset());
+                mGraphView.setmZeroLineYOffset(0);
                 break;
             case MotionEvent.ACTION_MOVE:
-                mZeroLineYOffset = (int) (event.getY() - mTouchOffset);
+                mGraphView.setmZeroLineYOffset((int) (event.getY() - mGraphView.getmTouchOffset()));
                 break;
         }
         return super.onTouchEvent(event);
@@ -339,15 +330,6 @@ public class AccelerometerActivity extends AppCompatActivity {
         // Uzimanje frame layout-a
         FrameLayout frame = (FrameLayout) findViewById(R.id.frame);
 
-        // Uzimanje boja iz  resource-a
-        mStringColor = ContextCompat.getColor(this, R.color.string);
-        mBGColor = ContextCompat.getColor(this, R.color.background);
-        mZeroLineColor = ContextCompat.getColor(this, R.color.zero_line);
-        mAngleColors[DATA_X] = ContextCompat.getColor(this, R.color.accele_x);
-        mAngleColors[DATA_Y] = ContextCompat.getColor(this, R.color.accele_y);
-        mAngleColors[DATA_Z] = ContextCompat.getColor(this, R.color.accele_z);
-        mAngleColors[DATA_R] = ContextCompat.getColor(this, R.color.accele_r);
-
         //Dodat frame layout za pregled grafa sa parametrom mGraphView i spec parametrom 0
         mGraphView = new GraphView(this);
         frame.addView(mGraphView, 0);
@@ -359,7 +341,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         checkboxes[DATA_Z] = (CheckBox) findViewById(R.id.accele_z);
         checkboxes[DATA_R] = (CheckBox) findViewById(R.id.accele_r);
         for (int i = 0; i < 4; i++) {
-            if (mGraphs[i]) {
+            if (mGraphView.getmGraphs()[i]) {
                 checkboxes[i].setChecked(true);
             }
             checkboxes[i]
@@ -369,16 +351,16 @@ public class AccelerometerActivity extends AppCompatActivity {
                                                      boolean isChecked) {
                             switch (buttonView.getId()) {
                                 case R.id.accele_x:
-                                    mGraphs[DATA_X] = isChecked;
+                                    mGraphView.setGraphLineVisibility(DATA_X, isChecked);
                                     break;
                                 case R.id.accele_y:
-                                    mGraphs[DATA_Y] = isChecked;
+                                    mGraphView.setGraphLineVisibility(DATA_Y, isChecked);
                                     break;
                                 case R.id.accele_z:
-                                    mGraphs[DATA_Z] = isChecked;
+                                    mGraphView.setGraphLineVisibility(DATA_Z, isChecked);
                                     break;
                                 case R.id.accele_r:
-                                    mGraphs[DATA_R] = isChecked;
+                                    mGraphView.setGraphLineVisibility(DATA_R, isChecked);
                                     break;
                             }
                         }
@@ -543,10 +525,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         //Log.d(TAG, "currents: " + mCurrents[0] + " " + mCurrents[1] + " " + mCurrents[2] + " " + mCurrents[3]);
         synchronized (this) {
             // History register
-            if (mHistory.size() >= mMaxHistorySize) {
-                mHistory.poll();
-            }
-            mHistory.add(mCurrents.clone());
+            mGraphView.addDataToGraphHistory(mCurrents.clone());
         }
 
         if (locationOfMaxRms != null) {
@@ -898,169 +877,14 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     //*********************************** Graph View *********************************************//
 
-    private class GraphView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
-
-        public GraphView(Context context) {
-            super(context);
-
-            Log.i(TAG, "GraphView.GraphView()");
-
-            mHolder = getHolder();
-            mHolder.addCallback(this);
-
-            setFocusable(true);
-            requestFocus();
-        }
-
-        @Override
-        public void surfaceChanged(SurfaceHolder holder, int format, int width,
-                                   int height) {
-            Log.i(TAG, "GraphView.surfaceChanged()");
-        }
-
-        @Override
-        public void surfaceCreated(SurfaceHolder holder) {
-            Log.i(TAG, "GraphView.surfaceCreated()");
-
-            mDrawRoop = true;
-            mThread = new Thread(this);
-            mThread.start();
-        }
-
-        @Override
-        public void surfaceDestroyed(SurfaceHolder holder) {
-            Log.i(TAG, "GraphView.surfaceDestroyed()");
-
-            mDrawRoop = false;
-            boolean roop = true;
-            while (roop) {
-                try {
-                    mThread.join();
-                    roop = false;
-                } catch (InterruptedException e) {
-                    Log.e(TAG, e.getMessage());
-                }
-            }
-            mThread = null;
-        }
-
-        @Override
-        public void run() {
-            Log.i(TAG, "GraphView.run()");
-
-            int width = getWidth();
-            int mLineWidth = 2;
-            mMaxHistorySize = (width - 20) / mLineWidth;
-
-            Paint textPaint = new Paint();
-            textPaint.setColor(mStringColor);
-            textPaint.setAntiAlias(true);
-            textPaint.setTextSize(14);
-
-            Paint zeroLinePaint = new Paint();
-            zeroLinePaint.setColor(mZeroLineColor);
-            zeroLinePaint.setAntiAlias(true);
-
-            // Iscrtavanje X,Y,Z i R ose i kanvasa za pozadinu
-            Paint[] linePaints = new Paint[4];
-            for (int i = 0; i < 4; i++) {
-                linePaints[i] = new Paint();
-                linePaints[i].setColor(mAngleColors[i]);
-                linePaints[i].setAntiAlias(true);
-                linePaints[i].setStrokeWidth(2);
-            }
-
-            while (mDrawRoop) {
-                Canvas canvas = mHolder.lockCanvas();
-
-                if (canvas == null) {
-                    break;
-                }
-
-                canvas.drawColor(mBGColor);
-
-                float zeroLineY = mZeroLineY + mZeroLineYOffset;
-
-                synchronized (mHolder) {
-                    float twoLineY = zeroLineY - (20 * mGraphScale);
-                    float oneLineY = zeroLineY - (10 * mGraphScale);
-                    float minasOneLineY = zeroLineY + (10 * mGraphScale);
-                    float minasTwoLineY = zeroLineY + (20 * mGraphScale);
-
-                    canvas.drawText("2", 5, twoLineY + 5, zeroLinePaint);
-                    canvas.drawLine(20, twoLineY, width, twoLineY,
-                            zeroLinePaint);
-
-                    canvas.drawText("1", 5, oneLineY + 5, zeroLinePaint);
-                    canvas.drawLine(20, oneLineY, width, oneLineY,
-                            zeroLinePaint);
-
-                    canvas.drawText("0", 5, zeroLineY + 5, zeroLinePaint);
-                    canvas.drawLine(20, zeroLineY, width, zeroLineY,
-                            zeroLinePaint);
-
-                    canvas.drawText("-1", 5, minasOneLineY + 5, zeroLinePaint);
-                    canvas.drawLine(20, minasOneLineY, width, minasOneLineY,
-                            zeroLinePaint);
-
-                    canvas.drawText("-2", 5, minasTwoLineY + 5, zeroLinePaint);
-                    canvas.drawLine(20, minasTwoLineY, width, minasTwoLineY,
-                            zeroLinePaint);
-
-                    if (mHistory.size() > 1) {
-                        Iterator<float[]> iterator = mHistory.iterator();
-                        float[] before = new float[4];
-                        int x = width - mHistory.size() * mLineWidth;
-                        int beforeX = x;
-                        x += mLineWidth;
-
-                        if (iterator.hasNext()) {
-                            float[] history = iterator.next();
-                            for (int angle = 0; angle < 4; angle++) {
-                                before[angle] = zeroLineY
-                                        - (history[angle] * mGraphScale);
-                            }
-                            while (iterator.hasNext()) {
-                                history = iterator.next();
-                                for (int angle = 0; angle < 4; angle++) {
-                                    float startY = zeroLineY
-                                            - (history[angle] * mGraphScale);
-                                    float stopY = before[angle];
-                                    if (mGraphs[angle]) {
-                                        canvas.drawLine(x, startY, beforeX,
-                                                stopY, linePaints[angle]);
-                                    }
-                                    before[angle] = startY;
-                                }
-                                beforeX = x;
-                                x += mLineWidth;
-                            }
-                        }
-                    }
-                }
-                mHolder.unlockCanvasAndPost(canvas);
-
-                try {
-                    int mDrawDelay = 100;
-                    Thread.sleep(mDrawDelay);
-                } catch (InterruptedException e) {
-                    Log.e(TAG, e.getMessage());
-                }
-            }
-        }
-
-        private Thread mThread;
-        private final SurfaceHolder mHolder;
-    }
-
     private void startGraph() {
         if (sensor.isUnsubscribed()) {
             defineSensorListener();
         }
 
-        if (!mDrawRoop) {
+        if (!mGraphView.ismDrawRoop()) {
             // Vraćanje iscrtavanja grafa
-            mDrawRoop = true;
+            mGraphView.setmDrawRoop(true);
             mGraphView.surfaceCreated(mGraphView.getHolder());
         }
     }
@@ -1070,7 +894,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         //	mSensorManager.unregisterListener(mSensorEventListener);
         sensor.unsubscribe();
         // Zaustavljanje iscrtavanja grafa
-        mDrawRoop = false;
+        mGraphView.setmDrawRoop(false);
     }
 
     //*********************************** Listeners **********************************************//
@@ -1220,7 +1044,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         mRawHistory.clear();
         mFilterHistory.clear();
-        mHistory.clear();
+        mGraphView.clearGraphHistory();
         mTempFilterList.clear();
     }
 
@@ -1247,20 +1071,12 @@ public class AccelerometerActivity extends AppCompatActivity {
     private static final int VERICAL_DEVICE_ORIENTATION = 1;
 
     private float[] mCurrents = new float[7];
-    private ConcurrentLinkedQueue<float[]> mHistory = new ConcurrentLinkedQueue<>();
     private ConcurrentLinkedQueue<float[]> mRawHistory = new ConcurrentLinkedQueue<>();
     private ConcurrentLinkedQueue<float[]> mFilterHistory = new ConcurrentLinkedQueue<>();
-
     private ConcurrentLinkedQueue<float[]> mTempFilterList = new ConcurrentLinkedQueue<>();
 
     private TextView[] mAccValueViews = new TextView[4];
     private float[] mLowPassFilters = {0.0f, 0.0f, 0.0f, 0.0f};
-    private boolean[] mGraphs = {true, true, true, true};
-    private int[] mAngleColors = new int[4];
-
-    private int mBGColor;
-    private int mZeroLineColor;
-    private int mStringColor;
 
     private GraphView mGraphView;
     private TextView mFilterRateView;
@@ -1296,12 +1112,6 @@ public class AccelerometerActivity extends AppCompatActivity {
     // Kasnjenje podataka predefinisan za pocetak rada na SENSOR_DELAY_UI
     // Kroz implementiranu logiku moguce ga je prome u meniju kasnije
     private int mSensorDelay = SensorManager.SENSOR_DELAY_UI;
-    private int mMaxHistorySize;
-    private boolean mDrawRoop = true;
-    private int mGraphScale = 6;
-    private int mZeroLineY = 230;
-    private int mZeroLineYOffset = 0;
-    private float mTouchOffset;
     private int mPassFilter = PASS_FILTER_HIGH;
     private float mFilterRate = 0.1f;
     private boolean mRecording = false;

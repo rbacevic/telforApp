@@ -3,12 +3,15 @@ package rs.akcelerometarapp.components;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import rs.akcelerometarapp.R;
 
 /**
  * Created by RADEEE on 26-Nov-15.
@@ -22,6 +25,14 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback, Ru
 
         mHolder = getHolder();
         mHolder.addCallback(this);
+
+        mStringColor = ContextCompat.getColor(context, R.color.string);
+        mBGColor = ContextCompat.getColor(context, R.color.background);
+        mZeroLineColor = ContextCompat.getColor(context, R.color.zero_line);
+        mAngleColors[0] = ContextCompat.getColor(context, R.color.accele_x);
+        mAngleColors[1] = ContextCompat.getColor(context, R.color.accele_y);
+        mAngleColors[2] = ContextCompat.getColor(context, R.color.accele_z);
+        mAngleColors[3] = ContextCompat.getColor(context, R.color.accele_r);
 
         setFocusable(true);
         requestFocus();
@@ -164,6 +175,45 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback, Ru
         }
     }
 
+    /********************************** Public  API ***********************************************/
+
+    public void increaseGraphScale() {
+        this.mGraphScale++;
+    }
+
+    public void decreaseGraphScale() {
+        if (this.mGraphScale > 1) {
+            this.mGraphScale--;
+        }
+    }
+
+    public void setGraphLineVisibility(int lineIndex, boolean isVisible) {
+        this.mGraphs[lineIndex] = isVisible;
+    }
+
+    public void addDataToGraphHistory(float[] values) {
+
+        if (mHistory.size() >= mMaxHistorySize) {
+            mHistory.poll();
+        }
+
+        mHistory.add(values);
+    }
+
+    public void clearGraphHistory() {
+        mHistory.clear();
+    }
+
+    /********************************** Getters and Setters ****************************************/
+
+    public float getmTouchOffset() {
+        return mTouchOffset;
+    }
+
+    public void setmTouchOffset(float mTouchOffset) {
+        this.mTouchOffset = mTouchOffset;
+    }
+
     public int getmZeroLineYOffset() {
         return mZeroLineYOffset;
     }
@@ -180,12 +230,8 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback, Ru
         this.mZeroLineY = mZeroLineY;
     }
 
-    public int getmGraphScale() {
-        return mGraphScale;
-    }
-
-    public void setmGraphScale(int mGraphScale) {
-        this.mGraphScale = mGraphScale;
+    public boolean[] getmGraphs() {
+        return mGraphs;
     }
 
     public boolean ismDrawRoop() {
@@ -196,61 +242,7 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback, Ru
         this.mDrawRoop = mDrawRoop;
     }
 
-    public int getmMaxHistorySize() {
-        return mMaxHistorySize;
-    }
-
-    public void setmMaxHistorySize(int mMaxHistorySize) {
-        this.mMaxHistorySize = mMaxHistorySize;
-    }
-
-    public int getmZeroLineColor() {
-        return mZeroLineColor;
-    }
-
-    public void setmZeroLineColor(int mZeroLineColor) {
-        this.mZeroLineColor = mZeroLineColor;
-    }
-
-    public int[] getmAngleColors() {
-        return mAngleColors;
-    }
-
-    public void setmAngleColors(int[] mAngleColors) {
-        this.mAngleColors = mAngleColors;
-    }
-
-    public ConcurrentLinkedQueue<float[]> getmHistory() {
-        return mHistory;
-    }
-
-    public void setmHistory(ConcurrentLinkedQueue<float[]> mHistory) {
-        this.mHistory = mHistory;
-    }
-
-    public boolean[] getmGraphs() {
-        return mGraphs;
-    }
-
-    public void setmGraphs(boolean[] mGraphs) {
-        this.mGraphs = mGraphs;
-    }
-
-    public int getmBGColor() {
-        return mBGColor;
-    }
-
-    public void setmBGColor(int mBGColor) {
-        this.mBGColor = mBGColor;
-    }
-
-    public int getmStringColor() {
-        return mStringColor;
-    }
-
-    public void setmStringColor(int mStringColor) {
-        this.mStringColor = mStringColor;
-    }
+    /*********************************** Properties ***********************************************/
 
     private Thread mThread;
     private final SurfaceHolder mHolder;
@@ -268,6 +260,7 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback, Ru
     private int mGraphScale = 6;
     private int mZeroLineY = 230;
     private int mZeroLineYOffset = 0;
+    private float mTouchOffset;
 
     private static final String TAG = "GraphView";
 }
