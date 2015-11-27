@@ -18,6 +18,12 @@
     <string name="start_save_msg">Početak Snimanja MSG</string>
     <string name="version">1.1</string>
     <string name="menu_settings">Podešavanja</string>
+    <string name="acc_sensor_not_found">Akcelerometar nije pronadjen!</string>
+    <string name="rms_default_value">0.00</string>
+    <string name="find_equilibrium_position">Postavite uredjaj u ravnotezan polozaj</string>
+    <string name="sensor_calibrated">Uredjaj je kalibrisan</string>
+    <string name="finding_GPS">Trazenje GPS-a...</string>
+    <string name="GPS_found">GPS pronadjen</string>
 
     <!-- Progress Dialog -->
     <string name="progress_dialog_text">Molimo vas sacekajte...</string>
@@ -65,5 +71,8 @@
     <string name="meters">m</string>
     <string name="time_between_points">Izracunaj RMS na svakih </string>
     <string name="seconds">s</string>
+    <string name="server_unavailable">Server nije trenutno dostupan...</string>
+    <string name="measurement_creation_failed">Doslo je do greske prilikom kreiranja merenja, molimo vas pokusajte ponovo</string>
+    <string name="measurement_creation_success">Merenje je uspesno kreirano</string>
 
 </resources>

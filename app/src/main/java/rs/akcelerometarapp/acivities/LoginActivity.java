@@ -19,6 +19,7 @@ import org.apache.http.message.BasicNameValuePair;
 import java.util.ArrayList;
 
 import rs.akcelerometarapp.R;
+import rs.akcelerometarapp.constants.Constants;
 import rs.akcelerometarapp.network.CustomHttpClient;
 import rs.akcelerometarapp.network.UrlAddresses;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
@@ -72,17 +73,17 @@ public class LoginActivity extends AppCompatActivity {
         String password = passwordEditText.getText().toString();
         String serverURL = serverURLEditText.getText().toString();
 
-        if (username == null || username.length() == 0) {
+        if (username.length() == 0) {
             Toast.makeText(this, getString(R.string.username_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
 
-        if (password == null || password.length() == 0) {
+        if (password.length() == 0) {
             Toast.makeText(this, getString(R.string.password_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
 
-        if (serverURL == null || serverURL.length() == 0) {
+        if (serverURL.length() == 0) {
             Toast.makeText(this, getString(R.string.server_url_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
@@ -124,9 +125,9 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(newIntent);
         } else {
             ArrayList<NameValuePair> postParameters = new ArrayList<>();
-            postParameters.add(new BasicNameValuePair("username", username));
-            postParameters.add(new BasicNameValuePair("password", password));
-            postParameters.add(new BasicNameValuePair("akcija", "login"));
+            postParameters.add(new BasicNameValuePair(Constants.USERNAME, username));
+            postParameters.add(new BasicNameValuePair(Constants.PASSWORD, password));
+            postParameters.add(new BasicNameValuePair(Constants.ACTION, Constants.ACTION_LOGIN));
 
             String response = null;
 

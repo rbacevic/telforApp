@@ -24,6 +24,7 @@ import org.apache.http.message.BasicNameValuePair;
 import java.util.ArrayList;
 
 import rs.akcelerometarapp.R;
+import rs.akcelerometarapp.constants.Constants;
 import rs.akcelerometarapp.network.CustomHttpClient;
 import rs.akcelerometarapp.network.UrlAddresses;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
@@ -151,12 +152,12 @@ public class CreateNewMeasurement extends AppCompatActivity {
 
         String name = measurementName.getText().toString();
 
-        if (name == null || name.length() == 0) {
+        if (name.length() == 0) {
             Toast.makeText(this, getString(R.string.measurement_name_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
 
-        if (userId == null || userId.length() == 0) {
+        if (userId.length() == 0) {
             Toast.makeText(this, getString(R.string.user_id_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
@@ -227,26 +228,26 @@ public class CreateNewMeasurement extends AppCompatActivity {
         if (sessionManager.isLocalUser()) {
             Intent newIntent = new Intent(this, AccelerometerActivity.class);
             Bundle bundle = new Bundle();
-            bundle.putString("userID", userId);
-            bundle.putString("measurementId", "test");
-            bundle.putString("opis", measurementDescription.getText().toString());
-            bundle.putString("imeMerenja", measurementName);
-            bundle.putBoolean("saveKML", saveKMLFile.isChecked());
-            bundle.putBoolean("saveRaw", saveRawFile.isChecked());
-            bundle.putInt("eliminateNearPoints", distanceConstant);
-            bundle.putInt("timeBetweenPoints", timeConstant);
-            bundle.putInt("deviceOrientation", deviceOrientation);
-            bundle.putInt("measureUnit", measureUnit);
+            bundle.putString(Constants.USER_ID, userId);
+            bundle.putString(Constants.MEASUREMENT_ID, "test");
+            bundle.putString(Constants.DESCRIPTION, measurementDescription.getText().toString());
+            bundle.putString(Constants.MEASUREMENT_NAME, measurementName);
+            bundle.putBoolean(Constants.SAVE_KML_FILE, saveKMLFile.isChecked());
+            bundle.putBoolean(Constants.SAVE_RAW_FILE, saveRawFile.isChecked());
+            bundle.putInt(Constants.ELIMINATE_NEAR_POINTS, distanceConstant);
+            bundle.putInt(Constants.TIME_BETWEEN_POINTS, timeConstant);
+            bundle.putInt(Constants.DEVICE_ORIENTATION, deviceOrientation);
+            bundle.putInt(Constants.MEASURE_UNIT, measureUnit);
             newIntent.putExtras(bundle);
             startActivity(newIntent);
         } else {
             ProgressDialogUtils.showProgressDialog(progressDialog);
 
             ArrayList<NameValuePair> postParameters = new ArrayList<>();
-            postParameters.add(new BasicNameValuePair("naziv", measurementName));
-            postParameters.add(new BasicNameValuePair("idK", userId));
-            postParameters.add(new BasicNameValuePair("opis", measurementDescription.getText().toString()));
-            postParameters.add(new BasicNameValuePair("akcija", "start"));
+            postParameters.add(new BasicNameValuePair(Constants.MEASUREMENT_N, measurementName));
+            postParameters.add(new BasicNameValuePair(Constants.ID_K, userId));
+            postParameters.add(new BasicNameValuePair(Constants.DESCRIPTION, measurementDescription.getText().toString()));
+            postParameters.add(new BasicNameValuePair(Constants.ACTION, Constants.ACTION_START));
 
             String response = null;
 
@@ -260,32 +261,32 @@ public class CreateNewMeasurement extends AppCompatActivity {
                 int rezultatPovratna = Integer.parseInt(res);
 
                 if(rezultatPovratna > 0){
-                    Toast.makeText(this, "Merenje je uspesno kreirano", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.measurement_creation_success), Toast.LENGTH_SHORT).show();
 
                     ProgressDialogUtils.dismissProgressDialog(progressDialog);
 
                     Intent newIntent = new Intent(this, AccelerometerActivity.class);
                     Bundle bundle = new Bundle();
-                    bundle.putString("userID", userId);
-                    bundle.putString("measurementId", res);
-                    bundle.putString("opis", measurementDescription.getText().toString());
-                    bundle.putString("imeMerenja", measurementName);
-                    bundle.putBoolean("saveKML", saveKMLFile.isChecked());
-                    bundle.putBoolean("saveRaw", saveRawFile.isChecked());
-                    bundle.putInt("eliminateNearPoints", distanceConstant);
-                    bundle.putInt("timeBetweenPoints", timeConstant);
-                    bundle.putInt("deviceOrientation", deviceOrientation);
-                    bundle.putInt("measureUnit", measureUnit);
+                    bundle.putString(Constants.USER_ID, userId);
+                    bundle.putString(Constants.MEASUREMENT_ID, res);
+                    bundle.putString(Constants.DESCRIPTION, measurementDescription.getText().toString());
+                    bundle.putString(Constants.MEASUREMENT_NAME, measurementName);
+                    bundle.putBoolean(Constants.SAVE_KML_FILE, saveKMLFile.isChecked());
+                    bundle.putBoolean(Constants.SAVE_RAW_FILE, saveRawFile.isChecked());
+                    bundle.putInt(Constants.ELIMINATE_NEAR_POINTS, distanceConstant);
+                    bundle.putInt(Constants.TIME_BETWEEN_POINTS, timeConstant);
+                    bundle.putInt(Constants.DEVICE_ORIENTATION, deviceOrientation);
+                    bundle.putInt(Constants.MEASURE_UNIT, measureUnit);
                     newIntent.putExtras(bundle);
                     startActivity(newIntent);
 
                 } else {
                     ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                    Toast.makeText(this, "Doslo je do greske prilikom kreiranja merenja, molimo vas pokusajte ponovo", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.measurement_creation_failed), Toast.LENGTH_SHORT).show();
                 }
             } catch (Exception e) {
                 ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                Toast.makeText(this, "Server nije trenutno dostupan...", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.server_unavailable), Toast.LENGTH_SHORT).show();
                 e.printStackTrace();
             }
         }

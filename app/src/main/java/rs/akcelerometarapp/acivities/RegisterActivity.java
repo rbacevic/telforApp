@@ -16,6 +16,7 @@ import org.apache.http.message.BasicNameValuePair;
 import java.util.ArrayList;
 
 import rs.akcelerometarapp.R;
+import rs.akcelerometarapp.constants.Constants;
 import rs.akcelerometarapp.network.CustomHttpClient;
 import rs.akcelerometarapp.network.UrlAddresses;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
@@ -66,17 +67,17 @@ public class RegisterActivity extends AppCompatActivity {
         String email = emailEditText.getText().toString();
         String serverURL = serverURLEditText.getText().toString();
 
-        if (username == null || username.length() == 0) {
+        if (username.length() == 0) {
             Toast.makeText(this, getString(R.string.username_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
 
-        if (password == null || password.length() == 0) {
+        if (password.length() == 0) {
             Toast.makeText(this, getString(R.string.password_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
 
-        if (confirmPassword == null || confirmPassword.length() == 0) {
+        if (confirmPassword.length() == 0) {
             Toast.makeText(this, getString(R.string.confirm_password), Toast.LENGTH_SHORT).show();
             return false;
         }
@@ -86,22 +87,22 @@ public class RegisterActivity extends AppCompatActivity {
             return false;
         }
 
-        if (name == null || name.length() == 0) {
+        if (name.length() == 0) {
             Toast.makeText(this, getString(R.string.name_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
 
-        if (lastname == null || lastname.length() == 0) {
+        if (lastname.length() == 0) {
             Toast.makeText(this, getString(R.string.lastname_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
 
-        if (email == null || email.length() == 0) {
+        if (email.length() == 0) {
             Toast.makeText(this, getString(R.string.email_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
 
-        if (serverURL == null || serverURL.length() == 0) {
+        if (serverURL.length() == 0) {
             Toast.makeText(this, getString(R.string.server_url_missing), Toast.LENGTH_SHORT).show();
             return false;
         }
@@ -129,13 +130,12 @@ public class RegisterActivity extends AppCompatActivity {
         ProgressDialogUtils.showProgressDialog(progressDialog);
 
         ArrayList<NameValuePair> postParameters = new ArrayList<>();
-        postParameters.add(new BasicNameValuePair("username", username));
-        postParameters.add(new BasicNameValuePair("password", password));
-        postParameters.add(new BasicNameValuePair("username", username));
-        postParameters.add(new BasicNameValuePair("ime", name));
-        postParameters.add(new BasicNameValuePair("prezime", lastname));
-        postParameters.add(new BasicNameValuePair("email", email));
-        postParameters.add(new BasicNameValuePair("akcija", "registracija"));
+        postParameters.add(new BasicNameValuePair(Constants.USERNAME, username));
+        postParameters.add(new BasicNameValuePair(Constants.PASSWORD, password));
+        postParameters.add(new BasicNameValuePair(Constants.NAME, name));
+        postParameters.add(new BasicNameValuePair(Constants.LAST_NAME, lastname));
+        postParameters.add(new BasicNameValuePair(Constants.EMAIL, email));
+        postParameters.add(new BasicNameValuePair(Constants.ACTION, Constants.ACTION_REGISTER));
 
         String response = null;
 
@@ -154,10 +154,6 @@ public class RegisterActivity extends AppCompatActivity {
 
             if(rezultatPovratna == 0) {
                 Toast.makeText(this, "Uspesna registracija", Toast.LENGTH_SHORT).show();
-
-                /*ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                Intent newIntent = new Intent(this, LoginActivity.class);
-                startActivity(newIntent);*/
                 finish();
 
             } else if (rezultatPovratna == 1) {

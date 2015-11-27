@@ -18,8 +18,6 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.CheckBox;
@@ -55,6 +53,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import pl.charmas.android.reactivelocation.ReactiveLocationProvider;
 import rs.akcelerometarapp.R;
 import rs.akcelerometarapp.components.GraphView;
+import rs.akcelerometarapp.constants.Constants;
 import rs.akcelerometarapp.network.CustomHttpClient;
 import rs.akcelerometarapp.network.UrlAddresses;
 import rs.akcelerometarapp.utils.FileUtils;
@@ -82,54 +81,28 @@ public class AccelerometerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         Window window = getWindow();
-
         // Održavanje aktivnog ekrana da ne ide u sleep
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
         // Setovanje layouta
         setContentView(R.layout.activity_main);
-
         // Setovanje UI
         configureUI();
 
         Bundle bundle = getIntent().getExtras();
         if (bundle != null) {
-            measurementId = bundle.getString("measurementId");
-            userId = bundle.getString("userID");
-            measurementDescription = bundle.getString("opis");
-            saveKMLFile = bundle.getBoolean("saveKML");
-            saveRAWFile = bundle.getBoolean("saveRaw");
-            minDistanceBetweenTwoPoints = bundle.getInt("eliminateNearPoints");
-            minTimeBetweenTwoPoints = bundle.getInt("timeBetweenPoints") * 1000;
-            deviceOrientation = bundle.getInt("deviceOrientation");
-            measureUnit = bundle.getInt("measureUnit");
-            measurementName = bundle.getString("imeMerenja");
+            measurementId = bundle.getString(Constants.MEASUREMENT_ID);
+            userId = bundle.getString(Constants.USER_ID);
+            measurementDescription = bundle.getString(Constants.MEASUREMENT_DESCRIPTION);
+            saveKMLFile = bundle.getBoolean(Constants.SAVE_KML_FILE);
+            saveRAWFile = bundle.getBoolean(Constants.SAVE_RAW_FILE);
+            minDistanceBetweenTwoPoints = bundle.getInt(Constants.ELIMINATE_NEAR_POINTS);
+            minTimeBetweenTwoPoints = bundle.getInt(Constants.TIME_BETWEEN_POINTS) * 1000;
+            deviceOrientation = bundle.getInt(Constants.DEVICE_ORIENTATION);
+            measureUnit = bundle.getInt(Constants.MEASURE_UNIT);
+            measurementName = bundle.getString(Constants.MEASUREMENT_NAME);
         }
 
-        String username = SessionManager.getInstance(this).getKeyUsername();
-        String unit = measureUnit == 0 ? "G" : "m/s^2";
-        String deviceOrient = deviceOrientation == 0 ? "H" : "V";
-        String saveFile = "";
-
-        if (saveKMLFile) {
-            saveFile = "KML";
-        }
-
-        if (saveRAWFile) {
-            if (saveFile.length() > 0) {
-                saveFile = saveFile + " i CSV";
-            } else {
-                saveFile = "CSV";
-            }
-        }
-
-        fileUtils = new FileUtils(this);
-
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
-        String title = getResources().getString(R.string.app_name) + " - " + username + " / " + saveFile + " / "
-                + unit + " / " + deviceOrient + " / " + minTimeBetweenTwoPoints/1000 + "s / " + minDistanceBetweenTwoPoints + "m";
-        toolbar.setTitle(title);
-        setSupportActionBar(toolbar);
+        configureToolbar();
 
         locationProvider = new ReactiveLocationProvider(getApplicationContext());
         locationRequest = locationRequest();
@@ -312,11 +285,11 @@ public class AccelerometerActivity extends AppCompatActivity {
         if (reactiveSensor.hasSensor(Sensor.TYPE_ACCELEROMETER)) {
             sensor = defineSensorListener();
         } else {
-            Toast.makeText(AccelerometerActivity.this, "NIJE PRONADjEN AKCELEROMETAR!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(AccelerometerActivity.this, getResources().getString(R.string.acc_sensor_not_found), Toast.LENGTH_SHORT).show();
         }
     }
 
-    private final LocationRequest locationRequest() {
+    private LocationRequest locationRequest() {
         return LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setNumUpdates(5)
@@ -374,7 +347,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         mAccValueViews[DATA_R] = (TextView) findViewById(R.id.accele_r_value);
 
         // Pass filter - registracija listener-a za radio button-e
-        passFilterGroup = (RadioGroup) findViewById(R.id.pass_filter);
+        RadioGroup passFilterGroup = (RadioGroup) findViewById(R.id.pass_filter);
         passFilterGroup.check(R.id.pass_filter_high);
         passFilterGroup
                 .setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
@@ -396,7 +369,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         lightBulbImageView = (ImageView)findViewById(R.id.light_bulb_image);
         rmsTextView = (TextView)findViewById(R.id.rms_value);
-        rmsTextView.setText("0.00");
+        rmsTextView.setText(getString(R.string.rms_default_value));
 
         //Rate filtera - Uzimanje vrednosti za TextView prikaz
         mFilterRateView = (TextView) findViewById(R.id.filter_rate_value);
@@ -451,6 +424,34 @@ public class AccelerometerActivity extends AppCompatActivity {
             }
         });
         dialogBuilder.show();
+    }
+
+    void configureToolbar() {
+
+        String username = SessionManager.getInstance(this).getKeyUsername();
+        String unit = measureUnit == 0 ? "G" : "m/s^2";
+        String deviceOrient = deviceOrientation == 0 ? "H" : "V";
+        String saveFile = "";
+
+        if (saveKMLFile) {
+            saveFile = "KML";
+        }
+
+        if (saveRAWFile) {
+            if (saveFile.length() > 0) {
+                saveFile = saveFile + " i CSV";
+            } else {
+                saveFile = "CSV";
+            }
+        }
+
+        fileUtils = new FileUtils(this);
+
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        String title = getResources().getString(R.string.app_name) + " - " + username + " / " + saveFile + " / "
+                + unit + " / " + deviceOrient + " / " + minTimeBetweenTwoPoints/1000 + "s / " + minDistanceBetweenTwoPoints + "m";
+        toolbar.setTitle(title);
+        setSupportActionBar(toolbar);
     }
 
     private String roundFourDecimals(double d)
@@ -517,7 +518,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         Double dReal = Math.abs(Math.sqrt(Math.pow(mCurrents[DATA_X], 2)
                 + Math.pow(mCurrents[DATA_Y], 2)
                 + Math.pow(mCurrents[DATA_Z], 2)));
-        fReal = dReal.floatValue();
+        float fReal = dReal.floatValue();
 
         mCurrents[DATA_R] = fReal;
         mAccValueViews[DATA_R].setText(roundFourDecimals(fReal));
@@ -531,7 +532,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         if (locationOfMaxRms != null) {
 
             if (!measureStarted && samplesCount == 0) {
-                Toast.makeText(this, "Postavite uredjaj u ravnotezan polozaj", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, getString(R.string.find_equilibrium_position), Toast.LENGTH_LONG).show();
             }
 
             if (mRecording) {
@@ -599,7 +600,7 @@ public class AccelerometerActivity extends AppCompatActivity {
             if (!getIntialGPS) {
                 getIntialGPS = true;
                 if (lastRMSDate == null) {
-                    Toast.makeText(this, "Traznje GPS-a...", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.finding_GPS), Toast.LENGTH_SHORT).show();
                 }
                 getDetectionLocation();
                 lastRMSDate = new Date();
@@ -624,7 +625,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                     public void onNext(Location location) {
 
                         if (locationOfMaxRms == null) {
-                            Toast.makeText(AccelerometerActivity.this, "GPS pronadjen", Toast.LENGTH_LONG).show();
+                            Toast.makeText(AccelerometerActivity.this, getString(R.string.GPS_found), Toast.LENGTH_LONG).show();
                         }
 
                         if (locationOfMaxRms != null && minDistanceBetweenTwoPoints > 0) {
@@ -742,7 +743,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         if (rmsXYZ < RMS_TRACEHOLD_FIRST && !measureStarted && !recordPoint) {
             measureStarted = true;
             Log.d(TAG, "start measuring");
-            Toast.makeText(this, "Uredjaj kalibirsan, pocinje merenje !!!", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.sensor_calibrated ), Toast.LENGTH_LONG).show();
         }
 
         mFilterHistory.clear();
@@ -810,24 +811,24 @@ public class AccelerometerActivity extends AppCompatActivity {
         if (!SessionManager.getInstance(this).isLocalUser()) {
             //posalji tacku na server
             ArrayList<NameValuePair> postParameters = new ArrayList<>();
-            postParameters.add(new BasicNameValuePair("idK", userId));
-            postParameters.add(new BasicNameValuePair("idM", measurementId));
-            postParameters.add(new BasicNameValuePair("rmsX", String.valueOf(rmsX)));
-            postParameters.add(new BasicNameValuePair("rmsY", String.valueOf(rmsY)));
-            postParameters.add(new BasicNameValuePair("rmsZ", String.valueOf(rmsZ)));
-            /*postParameters.add(new BasicNameValuePair("maxRmsX", String.valueOf(maxRmsX)));
-            postParameters.add(new BasicNameValuePair("maxRmsY", String.valueOf(maxRmsY)));
-            postParameters.add(new BasicNameValuePair("maxRmsZ", String.valueOf(maxRmsZ)));*/
-            postParameters.add(new BasicNameValuePair("x", String.valueOf(xForApeakXYZ)));
-            postParameters.add(new BasicNameValuePair("y", String.valueOf(yForApeakXYZ)));
-            postParameters.add(new BasicNameValuePair("z", String.valueOf(zForApeakXYZ)));
-            postParameters.add(new BasicNameValuePair("aRms", String.valueOf(rmsXYZ)));
-            postParameters.add(new BasicNameValuePair("aPeak", String.valueOf(maxRmsXYZ)));
-            postParameters.add(new BasicNameValuePair("vreme", dateFormatted));
-            postParameters.add(new BasicNameValuePair("brzina", String.valueOf(speedInKmPerHour)));
-            postParameters.add(new BasicNameValuePair("longitude", String.valueOf(location.getLongitude())));
-            postParameters.add(new BasicNameValuePair("latitude", String.valueOf(location.getLatitude())));
-         //   postParameters.add(new BasicNameValuePair("opis", measurementDescription));
+            postParameters.add(new BasicNameValuePair(Constants.ID_K, userId));
+            postParameters.add(new BasicNameValuePair(Constants.ID_M, measurementId));
+            postParameters.add(new BasicNameValuePair(Constants.RMS_X, String.valueOf(rmsX)));
+            postParameters.add(new BasicNameValuePair(Constants.RMS_Y, String.valueOf(rmsY)));
+            postParameters.add(new BasicNameValuePair(Constants.RMS_Z, String.valueOf(rmsZ)));
+           /*postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_X, String.valueOf(maxRmsX)));
+            postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Y, String.valueOf(maxRmsY)));
+            postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Z, String.valueOf(maxRmsZ)));*/
+            postParameters.add(new BasicNameValuePair(Constants.X, String.valueOf(xForApeakXYZ)));
+            postParameters.add(new BasicNameValuePair(Constants.Y, String.valueOf(yForApeakXYZ)));
+            postParameters.add(new BasicNameValuePair(Constants.Z, String.valueOf(zForApeakXYZ)));
+            postParameters.add(new BasicNameValuePair(Constants.A_RMS, String.valueOf(rmsXYZ)));
+            postParameters.add(new BasicNameValuePair(Constants.A_PEAK, String.valueOf(maxRmsXYZ)));
+            postParameters.add(new BasicNameValuePair(Constants.TIME, dateFormatted));
+            postParameters.add(new BasicNameValuePair(Constants.SPEED, String.valueOf(speedInKmPerHour)));
+            postParameters.add(new BasicNameValuePair(Constants.LONGITUDE, String.valueOf(location.getLongitude())));
+            postParameters.add(new BasicNameValuePair(Constants.LATITUDE, String.valueOf(location.getLatitude())));
+         //   postParameters.add(new BasicNameValuePair(Constants.DESCRIPTION, measurementDescription));
 
             String response = null;
 
@@ -850,9 +851,9 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         if (!SessionManager.getInstance(this).isLocalUser()) {
             ArrayList<NameValuePair> postParameters = new ArrayList<>();
-            postParameters.add(new BasicNameValuePair("idM", measurementId));
-            postParameters.add(new BasicNameValuePair("idK", userId));
-            postParameters.add(new BasicNameValuePair("akcija", "stop"));
+            postParameters.add(new BasicNameValuePair(Constants.ID_M, measurementId));
+            postParameters.add(new BasicNameValuePair(Constants.ID_K, userId));
+            postParameters.add(new BasicNameValuePair(Constants.ACTION, Constants.ACTION_STOP));
 
             String response = null;
 
@@ -1048,7 +1049,6 @@ public class AccelerometerActivity extends AppCompatActivity {
         mTempFilterList.clear();
     }
 
-
     private static final String TAG = "AkcelerometerActivity";
 
     private static final int DATA_X = 0;
@@ -1080,7 +1080,6 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     private GraphView mGraphView;
     private TextView mFilterRateView;
-    private RadioGroup passFilterGroup;
     private ImageView lightBulbImageView;
     private TextView rmsTextView;
 
@@ -1115,8 +1114,6 @@ public class AccelerometerActivity extends AppCompatActivity {
     private int mPassFilter = PASS_FILTER_HIGH;
     private float mFilterRate = 0.1f;
     private boolean mRecording = false;
-    private Toolbar toolbar;
-    private float fReal;
 
     private Subscription sensor;
     private ReactiveSensors reactiveSensor;
