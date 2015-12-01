@@ -5,11 +5,11 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatButton;
 import android.support.v7.widget.AppCompatEditText;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -29,6 +29,12 @@ import rs.akcelerometarapp.network.CustomHttpClient;
 import rs.akcelerometarapp.network.UrlAddresses;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
 import rs.akcelerometarapp.utils.SessionManager;
+import rx.Observable;
+import rx.Observer;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Func0;
+import rx.schedulers.Schedulers;
 
 /**
  * Created by RADEEE on 10-Oct-15.
@@ -39,9 +45,6 @@ public class CreateNewMeasurement extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.create_measurement);
-
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-        StrictMode.setThreadPolicy(policy);
 
         configUI();
         collectData();
@@ -142,6 +145,14 @@ public class CreateNewMeasurement extends AppCompatActivity {
         measurementDescription.setText("");
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (createMeasurementSubscription != null && !createMeasurementSubscription.isUnsubscribed()) {
+            createMeasurementSubscription.unsubscribe();
+        }
+    }
+
     protected void setAllListeners () {
         startMeasurement.setOnClickListener(startMeasurementClickListener);
         unitsRadioGroup.setOnCheckedChangeListener(unitChanged);
@@ -210,8 +221,8 @@ public class CreateNewMeasurement extends AppCompatActivity {
         eliminateNearPoints.setText(eliminateNearPoints.getText().toString().length() == 0 ? "0" : eliminateNearPoints.getText().toString());
         timeBetweenPoints.setText(timeBetweenPoints.getText().toString().length() == 0 ? "10" : timeBetweenPoints.getText().toString());
 
-        int timeConstant = 10;
-        int distanceConstant = 0;
+        timeConstant = 10;
+        distanceConstant = 0;
 
         try {
             distanceConstant = Integer.parseInt(eliminateNearPoints.getText().toString());
@@ -242,56 +253,91 @@ public class CreateNewMeasurement extends AppCompatActivity {
             startActivity(newIntent);
         } else {
             ProgressDialogUtils.showProgressDialog(progressDialog);
-
-            ArrayList<NameValuePair> postParameters = new ArrayList<>();
-            postParameters.add(new BasicNameValuePair(Constants.MEASUREMENT_N, measurementName));
-            postParameters.add(new BasicNameValuePair(Constants.ID_K, userId));
-            postParameters.add(new BasicNameValuePair(Constants.DESCRIPTION, measurementDescription.getText().toString()));
-            postParameters.add(new BasicNameValuePair(Constants.ACTION, Constants.ACTION_START));
-
-            String response = null;
-
-            try {
-
-                response = CustomHttpClient.executeHttpPost(UrlAddresses.CreateMesurementURL(), postParameters);
-                String res = response.toString();
-                res= res.replaceAll("\\s+", "");
-
-                // Prebacivanje res u integer da bi moglo da se primeni u if-u
-                int rezultatPovratna = Integer.parseInt(res);
-
-                if(rezultatPovratna > 0){
-                    Toast.makeText(this, getString(R.string.measurement_creation_success), Toast.LENGTH_SHORT).show();
-
-                    ProgressDialogUtils.dismissProgressDialog(progressDialog);
-
-                    Intent newIntent = new Intent(this, AccelerometerActivity.class);
-                    Bundle bundle = new Bundle();
-                    bundle.putString(Constants.USER_ID, userId);
-                    bundle.putString(Constants.MEASUREMENT_ID, res);
-                    bundle.putString(Constants.DESCRIPTION, measurementDescription.getText().toString());
-                    bundle.putString(Constants.MEASUREMENT_NAME, measurementName);
-                    bundle.putBoolean(Constants.SAVE_KML_FILE, saveKMLFile.isChecked());
-                    bundle.putBoolean(Constants.SAVE_RAW_FILE, saveRawFile.isChecked());
-                    bundle.putInt(Constants.ELIMINATE_NEAR_POINTS, distanceConstant);
-                    bundle.putInt(Constants.TIME_BETWEEN_POINTS, timeConstant);
-                    bundle.putInt(Constants.DEVICE_ORIENTATION, deviceOrientation);
-                    bundle.putInt(Constants.MEASURE_UNIT, measureUnit);
-                    newIntent.putExtras(bundle);
-                    startActivity(newIntent);
-
-                } else {
-                    ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                    Toast.makeText(this, getString(R.string.measurement_creation_failed), Toast.LENGTH_SHORT).show();
-                }
-            } catch (Exception e) {
-                ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                Toast.makeText(this, getString(R.string.server_unavailable), Toast.LENGTH_SHORT).show();
-                e.printStackTrace();
-            }
+            executeCreateNewMeasurementRequest();
         }
     }
 
+    private void executeCreateNewMeasurementRequest() {
+
+        createMeasurementSubscription = createNewMeasurementObservable()
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<String>() {
+                    @Override
+                    public void onCompleted() {
+                        Log.d(TAG, "Complete");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        Log.d(TAG,  s);
+
+                        String res= s.replaceAll("\\s+", "");
+                        int rezultatPovratna = Integer.parseInt(res);
+
+                        if(rezultatPovratna > 0){
+                            Toast.makeText(CreateNewMeasurement.this, getString(R.string.measurement_creation_success), Toast.LENGTH_SHORT).show();
+
+                            ProgressDialogUtils.dismissProgressDialog(progressDialog);
+
+                            Intent newIntent = new Intent(CreateNewMeasurement.this, AccelerometerActivity.class);
+                            Bundle bundle = new Bundle();
+                            bundle.putString(Constants.USER_ID, userId);
+                            bundle.putString(Constants.MEASUREMENT_ID, res);
+                            bundle.putString(Constants.DESCRIPTION, measurementDescription.getText().toString());
+                            bundle.putString(Constants.MEASUREMENT_NAME, measurementName.getText().toString());
+                            bundle.putBoolean(Constants.SAVE_KML_FILE, saveKMLFile.isChecked());
+                            bundle.putBoolean(Constants.SAVE_RAW_FILE, saveRawFile.isChecked());
+                            bundle.putInt(Constants.ELIMINATE_NEAR_POINTS, distanceConstant);
+                            bundle.putInt(Constants.TIME_BETWEEN_POINTS, timeConstant);
+                            bundle.putInt(Constants.DEVICE_ORIENTATION, deviceOrientation);
+                            bundle.putInt(Constants.MEASURE_UNIT, measureUnit);
+                            newIntent.putExtras(bundle);
+                            startActivity(newIntent);
+
+                        } else {
+                            ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                            Toast.makeText(CreateNewMeasurement.this, getString(R.string.measurement_creation_failed), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
+
+    private String setUpCreateNewMeasurementRequest() {
+
+        ArrayList<NameValuePair> postParameters = new ArrayList<>();
+        postParameters.add(new BasicNameValuePair(Constants.MEASUREMENT_N, measurementName.getText().toString()));
+        postParameters.add(new BasicNameValuePair(Constants.ID_K, userId));
+        postParameters.add(new BasicNameValuePair(Constants.DESCRIPTION, measurementDescription.getText().toString()));
+        postParameters.add(new BasicNameValuePair(Constants.ACTION, Constants.ACTION_START));
+
+        Log.d(TAG, "URL " + UrlAddresses.CreateMesurementURL());
+        try {
+            return CustomHttpClient.executeHttpPost(UrlAddresses.CreateMesurementURL(), postParameters);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ProgressDialogUtils.dismissProgressDialog(progressDialog);
+            Toast.makeText(this, "Server nije trenutno dostupan...", Toast.LENGTH_SHORT).show();
+        }
+        return null;
+    }
+
+    public Observable<String> createNewMeasurementObservable() {
+
+        return Observable.defer(new Func0<Observable<String>>() {
+            @Override
+            public Observable<String> call() {
+                return Observable.just(setUpCreateNewMeasurementRequest());
+            }
+        });
+    }
+
+    private Subscription createMeasurementSubscription;
     protected AppCompatEditText measurementName;
     protected AppCompatEditText measurementDescription;
     protected TextView usernameTextView;
@@ -310,7 +356,8 @@ public class CreateNewMeasurement extends AppCompatActivity {
     protected Toolbar toolbar;
     private static final int MENU_LOGOUT = (Menu.FIRST + 1);
     private static final int MENU_EXIT = (Menu.FIRST + 2);
-
+    private int timeConstant;
+    private int distanceConstant;
     private static final int UNIT_IN_G = 0;
     private static final int UNIT_IN_METRE_PER_SECOND_SQUARE = 1;
     private static final int HORIZONTAL_DEVICE_ORIENTATION = 0;

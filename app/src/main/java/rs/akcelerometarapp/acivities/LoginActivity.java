@@ -4,11 +4,11 @@ package rs.akcelerometarapp.acivities;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatButton;
 import android.support.v7.widget.AppCompatEditText;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 
 import android.widget.Toast;
@@ -24,6 +24,12 @@ import rs.akcelerometarapp.network.CustomHttpClient;
 import rs.akcelerometarapp.network.UrlAddresses;
 import rs.akcelerometarapp.utils.ProgressDialogUtils;
 import rs.akcelerometarapp.utils.SessionManager;
+import rx.Observable;
+import rx.Observer;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Func0;
+import rx.schedulers.Schedulers;
 
 /**
  * Created by RADEEE on 07-Oct-15.
@@ -35,9 +41,6 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login_activity);
 
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-        StrictMode.setThreadPolicy(policy);
-
         configUI();
         setAllListeners();
 
@@ -45,6 +48,14 @@ public class LoginActivity extends AppCompatActivity {
             UrlAddresses.setBaseUrl(SessionManager.getInstance(this).getSeverUrl());
             Intent newIntent = new Intent(this, CreateNewMeasurement.class);
             startActivity(newIntent);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (loginSubscription != null && !loginSubscription.isUnsubscribed()) {
+            loginSubscription.unsubscribe();
         }
     }
 
@@ -124,46 +135,79 @@ public class LoginActivity extends AppCompatActivity {
             Intent newIntent = new Intent(this, CreateNewMeasurement.class);
             startActivity(newIntent);
         } else {
-            ArrayList<NameValuePair> postParameters = new ArrayList<>();
-            postParameters.add(new BasicNameValuePair(Constants.USERNAME, username));
-            postParameters.add(new BasicNameValuePair(Constants.PASSWORD, password));
-            postParameters.add(new BasicNameValuePair(Constants.ACTION, Constants.ACTION_LOGIN));
-
-            String response = null;
-
-            try {
-
-                response = CustomHttpClient.executeHttpPost(UrlAddresses.LoginURL(), postParameters);
-                String res=response.toString();
-                res= res.replaceAll("\\s+", "");
-
-                // Prebacivanje res u integer da bi moglo da se primeni u if-u
-                int rezultatPovratna = Integer.parseInt(res);
-
-                if(rezultatPovratna > 0){
-                    Toast.makeText(this, "Uspesna verifikacija", Toast.LENGTH_SHORT).show();
-
-                    ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                    SessionManager.getInstance(this).createLoginSession(username, res, serverURL, false);
-                    Intent newIntent = new Intent(this, CreateNewMeasurement.class);
-                    /* Bundle bundle = new Bundle();
-                     bundle.putString("id", res);
-                      bundle.putString("username", username);
-                     newIntent.putExtras(bundle);*/
-                    startActivity(newIntent);
-
-                } else {
-                    ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                    Toast.makeText(this, "Pogresno korisnicko ime ili sifra", Toast.LENGTH_SHORT).show();
-                }
-            } catch (Exception e) {
-                ProgressDialogUtils.dismissProgressDialog(progressDialog);
-                Toast.makeText(this, "Server nije trenutno dostupan...", Toast.LENGTH_SHORT).show();
-                e.printStackTrace();
-            }
+            executeLoginRequest();
         }
     }
 
+    private void executeLoginRequest() {
+
+        loginSubscription = loginObservable()
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<String>() {
+                    @Override
+                    public void onCompleted() {
+                        Log.d(TAG, "Complete");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        Log.d(TAG,  s);
+
+                        String res= s.replaceAll("\\s+", "");
+                        int rezultatPovratna = Integer.parseInt(res);
+
+                        if(rezultatPovratna > 0){
+                            Toast.makeText(LoginActivity.this, "Uspesna verifikacija", Toast.LENGTH_SHORT).show();
+
+                            ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                            SessionManager.getInstance(LoginActivity.this)
+                                    .createLoginSession(usernameEditText.getText().toString(), res, serverURLEditText.getText().toString(), false);
+                            Intent newIntent = new Intent(LoginActivity.this, CreateNewMeasurement.class);
+                            startActivity(newIntent);
+
+                        } else {
+                            ProgressDialogUtils.dismissProgressDialog(progressDialog);
+                            Toast.makeText(LoginActivity.this, "Pogresno korisnicko ime ili sifra", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
+
+    private String setUpLoginRequest() {
+
+        ArrayList<NameValuePair> postParameters = new ArrayList<>();
+        postParameters.add(new BasicNameValuePair(Constants.USERNAME, usernameEditText.getText().toString()));
+        postParameters.add(new BasicNameValuePair(Constants.PASSWORD,  passwordEditText.getText().toString()));
+        postParameters.add(new BasicNameValuePair(Constants.ACTION, Constants.ACTION_LOGIN));
+
+        Log.d(TAG, "URL " + UrlAddresses.LoginURL());
+        try {
+            return CustomHttpClient.executeHttpPost(UrlAddresses.LoginURL(), postParameters);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ProgressDialogUtils.dismissProgressDialog(progressDialog);
+            Toast.makeText(this, "Server nije trenutno dostupan...", Toast.LENGTH_SHORT).show();
+        }
+        return null;
+    }
+
+    public Observable<String> loginObservable() {
+
+        return Observable.defer(new Func0<Observable<String>>() {
+            @Override
+            public Observable<String> call() {
+                return Observable.just(setUpLoginRequest());
+            }
+        });
+    }
+
+    private Subscription loginSubscription;
     protected AppCompatEditText usernameEditText;
     protected AppCompatEditText passwordEditText;
     protected AppCompatEditText serverURLEditText;

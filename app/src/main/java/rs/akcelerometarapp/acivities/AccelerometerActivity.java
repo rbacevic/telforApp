@@ -63,10 +63,12 @@ import rs.akcelerometarapp.utils.KmlUtils;
 import rs.akcelerometarapp.utils.SessionManager;
 import rs.akcelerometarapp.utils.TxtFileUtils;
 import rx.Observable;
+import rx.Observer;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
+import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
@@ -163,14 +165,14 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
+       /* super.onBackPressed();
         if (mRecording) {
-            stopMeasurement();
+            //stopMeasurement();
             Toast.makeText(this, getString(R.string.save_complated), Toast.LENGTH_LONG).show();
             saveHistory();
             updatableLocationSubscription.unsubscribe();
             finish();
-        }
+        }*/
     }
 
     @Override
@@ -240,11 +242,13 @@ public class AccelerometerActivity extends AppCompatActivity {
                 selectSensorDelay();
                 break;
             case MENU_SAVE:
-                stopMeasurement();
+                //stopMeasurement();
                 saveHistory();
                 Toast.makeText(this, getString(R.string.save_complated), Toast.LENGTH_LONG).show();
                 updatableLocationSubscription.unsubscribe();
-                finish();
+                if (SessionManager.getInstance(this).isLocalUser()) {
+                    finish();
+                }
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -869,78 +873,27 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         // send measure results to server
        sendPointOnServer(location, rmsX, rmsY, rmsZ, rmsXYZ, maxRmsXYZ, dateFormatted,
-               maxRmsX, maxRmsY, maxRmsZ, xForApeakXYZ, yForApeakXYZ, zForApeakXYZ, speedInKmPerHour, measurementDescription);
+               maxRmsX, maxRmsY, maxRmsZ, xForApeakXYZ, yForApeakXYZ, zForApeakXYZ, speedInKmPerHour, measurementDescription, false);
     }
 
     private void sendPointOnServer(Location location, double rmsX,
                                    double rmsY, double rmsZ, double rmsXYZ, double maxRmsXYZ,
                                    String dateFormatted,  double maxRmsX, double maxRmsY, double maxRmsZ,
                                    double xForApeakXYZ, double yForApeakXYZ, double zForApeakXYZ, double speedInKmPerHour,
-                                   String pointDescription) {
+                                   String pointDescription, boolean isLastPoint) {
 
         if (!SessionManager.getInstance(this).isLocalUser()) {
             //posalji tacku na server
-            ArrayList<NameValuePair> postParameters = new ArrayList<>();
-            postParameters.add(new BasicNameValuePair(Constants.ID_K, userId));
-            postParameters.add(new BasicNameValuePair(Constants.ID_M, measurementId));
-            postParameters.add(new BasicNameValuePair(Constants.RMS_X, String.valueOf(roundFourDecimals(rmsX))));
-            postParameters.add(new BasicNameValuePair(Constants.RMS_Y, String.valueOf(roundFourDecimals(rmsY))));
-            postParameters.add(new BasicNameValuePair(Constants.RMS_Z, String.valueOf(roundFourDecimals(rmsZ))));
-           /*postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_X, String.valueOf(maxRmsX)));
-            postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Y, String.valueOf(maxRmsY)));
-            postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Z, String.valueOf(maxRmsZ)));*/
-            postParameters.add(new BasicNameValuePair(Constants.X, String.valueOf(roundFourDecimals(xForApeakXYZ))));
-            postParameters.add(new BasicNameValuePair(Constants.Y, String.valueOf(roundFourDecimals(yForApeakXYZ))));
-            postParameters.add(new BasicNameValuePair(Constants.Z, String.valueOf(roundFourDecimals(zForApeakXYZ))));
-            postParameters.add(new BasicNameValuePair(Constants.A_RMS, String.valueOf(roundFourDecimals(rmsXYZ))));
-            postParameters.add(new BasicNameValuePair(Constants.A_PEAK, String.valueOf(roundFourDecimals(maxRmsXYZ))));
-            postParameters.add(new BasicNameValuePair(Constants.TIME, dateFormatted));
-            postParameters.add(new BasicNameValuePair(Constants.SPEED, String.valueOf(roundFourDecimals(speedInKmPerHour))));
-            postParameters.add(new BasicNameValuePair(Constants.LONGITUDE, String.valueOf(location.getLongitude())));
-            postParameters.add(new BasicNameValuePair(Constants.LATITUDE, String.valueOf(location.getLatitude())));
-            postParameters.add(new BasicNameValuePair(Constants.DESCRIPTION, pointDescription));
-
-            String response;
-
-            try {
-
-                response = CustomHttpClient.executeHttpPost(UrlAddresses.AddPointURL(), postParameters);
-                String res = response;
-                res = res.replaceAll("\\s+", "");
-                Log.d(TAG, res);
-            } catch (Exception e) {
-                Toast.makeText(this, "Greska prilikom slanja tacke na server", Toast.LENGTH_SHORT).show();
-                e.printStackTrace();
-            }
+            executeLoginRequest(location, rmsX, rmsY, rmsZ, rmsXYZ,
+                    maxRmsXYZ, dateFormatted, maxRmsX, maxRmsY, maxRmsZ, xForApeakXYZ,
+                    yForApeakXYZ, zForApeakXYZ, speedInKmPerHour, pointDescription, isLastPoint);
         }
     }
 
     private void stopMeasurement() {
 
         if (!SessionManager.getInstance(this).isLocalUser()) {
-            ArrayList<NameValuePair> postParameters = new ArrayList<>();
-            postParameters.add(new BasicNameValuePair(Constants.ID_M, measurementId));
-            postParameters.add(new BasicNameValuePair(Constants.ID_K, userId));
-            postParameters.add(new BasicNameValuePair(Constants.ACTION, Constants.ACTION_STOP));
-
-            String response;
-
-            try {
-
-                response = CustomHttpClient.executeHttpPost(UrlAddresses.StopMesurementURL(), postParameters);
-                String res = response;
-                res= res.replaceAll("\\s+", "");
-
-                // Prebacivanje res u integer da bi moglo da se primeni u if-u
-                int rezultatPovratna = Integer.parseInt(res);
-
-                if(rezultatPovratna > 0){
-                    Toast.makeText(this, "Merenje je uspesno sacuvano", Toast.LENGTH_SHORT).show();
-                }
-            } catch (Exception e) {
-                Toast.makeText(this, "Server nije trenutno dostupan...", Toast.LENGTH_SHORT).show();
-                e.printStackTrace();
-            }
+           executeStopMeasurementRequest();
         }
     }
 
@@ -964,6 +917,14 @@ public class AccelerometerActivity extends AppCompatActivity {
         sensor.unsubscribe();
         // Zaustavljanje iscrtavanja grafa
         mGraphView.setmDrawRoop(false);
+
+        if (sendPointToServerSubscription != null && !sendPointToServerSubscription.isUnsubscribed()) {
+            sendPointToServerSubscription.unsubscribe();
+        }
+
+        if (stopMeasurementSubscription != null && !stopMeasurementSubscription.isUnsubscribed()) {
+            stopMeasurementSubscription.unsubscribe();
+        }
     }
 
     //*********************************** Listeners **********************************************//
@@ -1116,7 +1077,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         sendPointOnServer(locationOfMaxRms, averageRMSX/savedPointsCounter, averageRMSY/savedPointsCounter, averageRMSZ/savedPointsCounter,
                 averageRMSXYZ/savedPointsCounter, averageMaxRMSXYZ/savedPointsCounter, getFormattedDate(locationOfMaxRms.getTime()),
                 averageMaxRMSX/savedPointsCounter, averageMaxRMSY / savedPointsCounter, averageMaxRMSZ/savedPointsCounter, averageX/savedPointsCounter,
-                averageY/savedPointsCounter, averageZ/savedPointsCounter, averageSpeed/validLocationsWithSpeed, averagePointDescription);
+                averageY/savedPointsCounter, averageZ/savedPointsCounter, averageSpeed/validLocationsWithSpeed, averagePointDescription, true);
 
         if (txtFileOutputStream != null) {
             fileUtils.finishEditingTxtFile(txtFileOutputStream);
@@ -1128,7 +1089,153 @@ public class AccelerometerActivity extends AppCompatActivity {
         mTempFilterList.clear();
     }
 
+    //********************************* Communication with sever *********************************//
 
+    private void executeLoginRequest(Location location, double rmsX,
+                                     double rmsY, double rmsZ, double rmsXYZ, double maxRmsXYZ,
+                                     String dateFormatted,  double maxRmsX, double maxRmsY, double maxRmsZ,
+                                     double xForApeakXYZ, double yForApeakXYZ, double zForApeakXYZ, double speedInKmPerHour,
+                                     String pointDescription, final boolean isLastPoint) {
+
+        sendPointToServerSubscription = sendPointToServerObservable(location, rmsX, rmsY, rmsZ, rmsXYZ,
+                                        maxRmsXYZ, dateFormatted, maxRmsX, maxRmsY, maxRmsZ, xForApeakXYZ,
+                                        yForApeakXYZ, zForApeakXYZ, speedInKmPerHour, pointDescription)
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<String>() {
+                    @Override
+                    public void onCompleted() {
+                        Log.d(TAG, "Complete");
+                        if (isLastPoint) {
+                            stopMeasurement();
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        String res = s.replaceAll("\\s+", "");
+                        Log.d(TAG, res);
+
+                    }
+                });
+    }
+
+    private String setUpSendPointToServerRequest(Location location, double rmsX,
+                                                 double rmsY, double rmsZ, double rmsXYZ, double maxRmsXYZ,
+                                                 String dateFormatted,  double maxRmsX, double maxRmsY, double maxRmsZ,
+                                                 double xForApeakXYZ, double yForApeakXYZ, double zForApeakXYZ, double speedInKmPerHour,
+                                                 String pointDescription) {
+
+        ArrayList<NameValuePair> postParameters = new ArrayList<>();
+        postParameters.add(new BasicNameValuePair(Constants.ID_K, userId));
+        postParameters.add(new BasicNameValuePair(Constants.ID_M, measurementId));
+        postParameters.add(new BasicNameValuePair(Constants.RMS_X, String.valueOf(roundFourDecimals(rmsX))));
+        postParameters.add(new BasicNameValuePair(Constants.RMS_Y, String.valueOf(roundFourDecimals(rmsY))));
+        postParameters.add(new BasicNameValuePair(Constants.RMS_Z, String.valueOf(roundFourDecimals(rmsZ))));
+           /*postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_X, String.valueOf(maxRmsX)));
+            postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Y, String.valueOf(maxRmsY)));
+            postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Z, String.valueOf(maxRmsZ)));*/
+        postParameters.add(new BasicNameValuePair(Constants.X, String.valueOf(roundFourDecimals(xForApeakXYZ))));
+        postParameters.add(new BasicNameValuePair(Constants.Y, String.valueOf(roundFourDecimals(yForApeakXYZ))));
+        postParameters.add(new BasicNameValuePair(Constants.Z, String.valueOf(roundFourDecimals(zForApeakXYZ))));
+        postParameters.add(new BasicNameValuePair(Constants.A_RMS, String.valueOf(roundFourDecimals(rmsXYZ))));
+        postParameters.add(new BasicNameValuePair(Constants.A_PEAK, String.valueOf(roundFourDecimals(maxRmsXYZ))));
+        postParameters.add(new BasicNameValuePair(Constants.TIME, dateFormatted));
+        postParameters.add(new BasicNameValuePair(Constants.SPEED, String.valueOf(roundFourDecimals(speedInKmPerHour))));
+        postParameters.add(new BasicNameValuePair(Constants.LONGITUDE, String.valueOf(location.getLongitude())));
+        postParameters.add(new BasicNameValuePair(Constants.LATITUDE, String.valueOf(location.getLatitude())));
+        postParameters.add(new BasicNameValuePair(Constants.DESCRIPTION, pointDescription));
+
+        Log.d(TAG, "URL " + UrlAddresses.AddPointURL());
+        try {
+            return CustomHttpClient.executeHttpPost(UrlAddresses.AddPointURL(), postParameters);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Greska prilikom slanja tacke na server", Toast.LENGTH_SHORT).show();
+        }
+        return null;
+    }
+
+    public Observable<String> sendPointToServerObservable(final Location location, final double rmsX,
+                                                          final double rmsY, final double rmsZ, final double rmsXYZ,
+                                                          final double maxRmsXYZ, final String dateFormatted, final double maxRmsX,
+                                                          final double maxRmsY, final double maxRmsZ, final double xForApeakXYZ,
+                                                          final double yForApeakXYZ, final double zForApeakXYZ,
+                                                          final double speedInKmPerHour, final String pointDescription) {
+
+        return Observable.defer(new Func0<Observable<String>>() {
+            @Override
+            public Observable<String> call() {
+                return Observable.just(setUpSendPointToServerRequest(location, rmsX, rmsY, rmsZ, rmsXYZ,
+                        maxRmsXYZ, dateFormatted, maxRmsX, maxRmsY, maxRmsZ, xForApeakXYZ, yForApeakXYZ,
+                        zForApeakXYZ, speedInKmPerHour, pointDescription));
+            }
+        });
+    }
+
+    private void executeStopMeasurementRequest() {
+
+        stopMeasurementSubscription = stopMeasurementObservable()
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<String>() {
+                    @Override
+                    public void onCompleted() {
+                        Log.d(TAG, "Complete");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        Log.d(TAG,  s);
+
+                        String res= s.replaceAll("\\s+", "");
+                        int rezultatPovratna = Integer.parseInt(res);
+
+                        if(rezultatPovratna > 0){
+                            Toast.makeText(AccelerometerActivity.this, "Merenje je uspesno sacuvano", Toast.LENGTH_SHORT).show();
+                        }
+
+                        finish();
+                    }
+                });
+    }
+
+    private String setUpStopMeasurementRequest() {
+
+        ArrayList<NameValuePair> postParameters = new ArrayList<>();
+        postParameters.add(new BasicNameValuePair(Constants.ID_M, measurementId));
+        postParameters.add(new BasicNameValuePair(Constants.ID_K, userId));
+        postParameters.add(new BasicNameValuePair(Constants.ACTION, Constants.ACTION_STOP));
+
+        Log.d(TAG, "URL " + UrlAddresses.StopMesurementURL());
+        try {
+            return CustomHttpClient.executeHttpPost(UrlAddresses.StopMesurementURL(), postParameters);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Server nije trenutno dostupan...", Toast.LENGTH_SHORT).show();
+        }
+        return null;
+    }
+
+    public Observable<String> stopMeasurementObservable() {
+
+        return Observable.defer(new Func0<Observable<String>>() {
+            @Override
+            public Observable<String> call() {
+                return Observable.just(setUpStopMeasurementRequest());
+            }
+        });
+    }
 
     private static final String TAG = "AkcelerometerActivity";
 
@@ -1198,6 +1305,8 @@ public class AccelerometerActivity extends AppCompatActivity {
     private float mFilterRate = 0.1f;
     private boolean mRecording = false;
 
+    private Subscription sendPointToServerSubscription;
+    private Subscription stopMeasurementSubscription;
     private Subscription sensor;
     private ReactiveSensors reactiveSensor;
     private ReactiveLocationProvider locationProvider;
