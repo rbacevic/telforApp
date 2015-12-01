@@ -229,7 +229,7 @@ public class CreateNewMeasurement extends AppCompatActivity {
             Intent newIntent = new Intent(this, AccelerometerActivity.class);
             Bundle bundle = new Bundle();
             bundle.putString(Constants.USER_ID, userId);
-            bundle.putString(Constants.MEASUREMENT_ID, "test");
+            bundle.putString(Constants.MEASUREMENT_ID, "0");
             bundle.putString(Constants.DESCRIPTION, measurementDescription.getText().toString());
             bundle.putString(Constants.MEASUREMENT_NAME, measurementName);
             bundle.putBoolean(Constants.SAVE_KML_FILE, saveKMLFile.isChecked());

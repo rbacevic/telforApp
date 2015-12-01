@@ -49,4 +49,6 @@ public class Constants {
     public static final String NAME = "name";
     public static final String LAST_NAME = "lastname";
     public static final String EMAIL = "email";
+
+    public static final float INVALID_VALUE = 1111;
 }

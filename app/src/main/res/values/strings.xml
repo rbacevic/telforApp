@@ -22,8 +22,10 @@
     <string name="rms_default_value">0.00</string>
     <string name="find_equilibrium_position">Postavite uredjaj u ravnotezan polozaj</string>
     <string name="sensor_calibrated">Uredjaj je kalibrisan</string>
+    <string name="wait_for_sensor_calibration">Molimo vas sacekajte da se uredjaj kalibrise.</string>
     <string name="finding_GPS">Trazenje GPS-a...</string>
     <string name="GPS_found">GPS pronadjen</string>
+    <string name="measurement_started">Pocinje merenje...</string>
 
     <!-- Progress Dialog -->
     <string name="progress_dialog_text">Molimo vas sacekajte...</string>

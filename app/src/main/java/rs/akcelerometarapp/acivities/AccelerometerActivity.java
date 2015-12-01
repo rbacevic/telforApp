@@ -9,6 +9,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -18,6 +19,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.CheckBox;
@@ -59,6 +61,7 @@ import rs.akcelerometarapp.network.UrlAddresses;
 import rs.akcelerometarapp.utils.FileUtils;
 import rs.akcelerometarapp.utils.KmlUtils;
 import rs.akcelerometarapp.utils.SessionManager;
+import rs.akcelerometarapp.utils.TxtFileUtils;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
@@ -163,10 +166,8 @@ public class AccelerometerActivity extends AppCompatActivity {
         super.onBackPressed();
         if (mRecording) {
             stopMeasurement();
-            if (saveKMLFile || saveRAWFile) {
-                Toast.makeText(this, getString(R.string.save_complated), Toast.LENGTH_LONG).show();
-                saveHistory();
-            }
+            Toast.makeText(this, getString(R.string.save_complated), Toast.LENGTH_LONG).show();
+            saveHistory();
             updatableLocationSubscription.unsubscribe();
             finish();
         }
@@ -183,18 +184,12 @@ public class AccelerometerActivity extends AppCompatActivity {
                     case KeyEvent.KEYCODE_VOLUME_DOWN:
                         mGraphView.decreaseGraphScale();
                         return true;
-                    case KeyEvent.KEYCODE_FOCUS:
-                        return true;
-                    case KeyEvent.KEYCODE_CAMERA:
-                        return true;
                 }
                 //Kada korisnik pusti neko dugme odnosno okonca akciju
             case KeyEvent.ACTION_UP:
                 switch (event.getKeyCode()) {
                     case KeyEvent.KEYCODE_VOLUME_UP:
                     case KeyEvent.KEYCODE_VOLUME_DOWN:
-                    case KeyEvent.KEYCODE_FOCUS:
-                    case KeyEvent.KEYCODE_CAMERA:
 
                         return true;
                 }
@@ -246,10 +241,8 @@ public class AccelerometerActivity extends AppCompatActivity {
                 break;
             case MENU_SAVE:
                 stopMeasurement();
-                if (saveRAWFile || saveKMLFile) {
-                    saveHistory();
-                    Toast.makeText(this, getString(R.string.save_complated), Toast.LENGTH_LONG).show();
-                }
+                saveHistory();
+                Toast.makeText(this, getString(R.string.save_complated), Toast.LENGTH_LONG).show();
                 updatableLocationSubscription.unsubscribe();
                 finish();
                 break;
@@ -466,11 +459,16 @@ public class AccelerometerActivity extends AppCompatActivity {
         return twoDForm.format(d);
     }
 
+    private String getFormattedDate(long currentTime) {
+
+        Date date = new Date(currentTime);
+        DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss");
+        return dateFormatter.format(date);
+    }
+
     //*********************************** Private Data *******************************************//
 
-    private void calculateRMS(ReactiveSensorEvent reactiveSensorEvent) {
-
-        SensorEvent event = reactiveSensorEvent.getSensorEvent();
+    private void collectDataFromSensor(SensorEvent event) {
 
         for (int angle = 0; angle < 3; angle++) {
 
@@ -482,7 +480,7 @@ public class AccelerometerActivity extends AppCompatActivity {
             if (angle == DATA_Y) {
                 index = DATA_Y;
             }
-            
+
             if (angle == DATA_Z) {
                 index = deviceOrientation == HORIZONTAL_DEVICE_ORIENTATION ? DATA_Z : DATA_X;
             }
@@ -497,19 +495,11 @@ public class AccelerometerActivity extends AppCompatActivity {
                 case PASS_FILTER_LOW:
                     value = mLowPassFilters[angle];
                     break;
-                    //High-pass filter po formuli aX = aX-((x*0.1)+(ax*(1-0.1)))
+                //High-pass filter po formuli aX = aX-((x*0.1)+(ax*(1-0.1)))
                 case PASS_FILTER_HIGH:
                     value -= mLowPassFilters[angle];
                     break;
             }
-            //uncomment for low pass filter data
-            /*if (angle == 0) {
-                mCurrents[4] = mLowPassFilters[angle];
-            } else if (angle == 1) {
-                mCurrents[5] = mLowPassFilters[angle];
-            } else if (angle == 2) {
-                mCurrents[6] = mLowPassFilters[angle];
-            }*/
             mCurrents[angle] = value;
             mAccValueViews[angle].setText(roundFourDecimals(value));
         }
@@ -523,15 +513,20 @@ public class AccelerometerActivity extends AppCompatActivity {
         mCurrents[DATA_R] = fReal;
         mAccValueViews[DATA_R].setText(roundFourDecimals(fReal));
 
-        //Log.d(TAG, "currents: " + mCurrents[0] + " " + mCurrents[1] + " " + mCurrents[2] + " " + mCurrents[3]);
         synchronized (this) {
             // History register
             mGraphView.addDataToGraphHistory(mCurrents.clone());
         }
+    }
+
+    private void calculateRMS(ReactiveSensorEvent reactiveSensorEvent) {
+
+        SensorEvent event = reactiveSensorEvent.getSensorEvent();
+        collectDataFromSensor(event);
 
         if (locationOfMaxRms != null) {
 
-            if (!measureStarted && samplesCount == 0) {
+            if (!measureStarted && samplesCount == 0 && !deviceOrientationChanged) {
                 Toast.makeText(this, getString(R.string.find_equilibrium_position), Toast.LENGTH_LONG).show();
             }
 
@@ -543,11 +538,18 @@ public class AccelerometerActivity extends AppCompatActivity {
                     }
 
                     mRawHistory.add(event.values.clone());    // dodavanje raw signala u listu
+                    for (int i = 4; i < 15; i++) {
+                        mCurrents[i] = Constants.INVALID_VALUE;
+                    }
                     mFilterHistory.add(mCurrents.clone());    // dodavanje filtiranog signala u listu
                 }
 
                 if (saveKMLFile && kmlFileOutputStream == null) {
                     kmlFileOutputStream = fileUtils.createKMLFile(System.currentTimeMillis(), getKmlHeaderString());
+                }
+
+                if (txtFileOutputStream == null) {
+                    txtFileOutputStream = fileUtils.createTxtFile(System.currentTimeMillis(), measurementName, measurementDescription, userId, measurementId);
                 }
 
                 mTempFilterList.add(mCurrents.clone());
@@ -591,6 +593,12 @@ public class AccelerometerActivity extends AppCompatActivity {
                         }
                     } else {
                         //kalibracija
+                        if ((Math.abs(event.values[0]) > Math.abs(event.values[2]) && deviceOrientation == HORIZONTAL_DEVICE_ORIENTATION) ||
+                                (Math.abs(event.values[0]) < Math.abs(event.values[2]) && deviceOrientation == VERICAL_DEVICE_ORIENTATION)){
+                            deviceOrientationChanged = true;
+                        } else  {
+                            deviceOrientationChanged = false;
+                        }
                         calculateRMSPoint(false);
                     }
                 }
@@ -630,7 +638,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
                         if (locationOfMaxRms != null && minDistanceBetweenTwoPoints > 0) {
                             float distanceInMeters = locationOfMaxRms.distanceTo(location);
-                            // Log.d(TAG, "distance in meters" + distanceInMeters);
+                            Log.d(TAG, "distance in meters" + distanceInMeters);
                             if (distanceInMeters > minDistanceBetweenTwoPoints) {
                                 locationOfMaxRms = location;
                                 locationUpdated = true;
@@ -660,19 +668,19 @@ public class AccelerometerActivity extends AppCompatActivity {
             float[] values = iterator.next();
 
             double currentApeakX = values[DATA_X];
-            if (maxRmsX < currentApeakX) {
+            if (Math.abs(maxRmsX) < Math.abs(currentApeakX)) {
                 maxRmsX = currentApeakX;
             }
             rmsX += Math.pow(currentApeakX, 2);
 
             double currentApeakY = values[DATA_Y];
-            if (maxRmsY < currentApeakY) {
+            if (Math.abs(maxRmsY) < Math.abs(currentApeakY)) {
                 maxRmsY = currentApeakY;
             }
             rmsY += Math.pow(currentApeakY, 2);
 
             double currentApeakZ = values[DATA_Z];
-            if (maxRmsZ < currentApeakZ) {
+            if (Math.abs(maxRmsZ) < Math.abs(currentApeakZ)) {
                 maxRmsZ = currentApeakZ;
             }
             rmsZ += Math.pow(currentApeakZ, 2);
@@ -680,8 +688,6 @@ public class AccelerometerActivity extends AppCompatActivity {
             rmsXYZ += (Math.pow(values[DATA_X], 2)
                     + Math.pow(values[DATA_Y], 2)
                     + Math.pow(values[DATA_Z], 2));
-
-            Log.d(TAG, "values " + values[DATA_X] + " " + values[DATA_Y] + " " + values[DATA_Z]);
         }
 
         rmsX = Math.sqrt(rmsX / samplesCount);
@@ -690,9 +696,7 @@ public class AccelerometerActivity extends AppCompatActivity {
         rmsXYZ = Math.sqrt(rmsXYZ / samplesCount);
         Log.d("samples count ", "" + samplesCount);
 
-        Date date = new Date(locationOfMaxRms.getTime());
-        DateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss:SSS");
-        String dateFormatted = dateFormatter.format(date);
+        String dateFormatted = getFormattedDate(locationOfMaxRms.getTime());
 
         Log.d(TAG, "RMS X: " + rmsX);
         Log.d(TAG, "RMS Y: " + rmsY);
@@ -713,6 +717,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         rmsTextView.setText(roundTwoDecimals(rmsXYZ));
         Log.d(TAG, "RMS XYZ rounded: " + roundTwoDecimals(rmsXYZ));
+        Log.d(TAG, "RMS XYZ: " + rmsXYZ);
 
         String markerType;
         String comfortLevelMessage;
@@ -731,19 +736,64 @@ public class AccelerometerActivity extends AppCompatActivity {
         }
 
         if (recordPoint) {
-            createPoint(markerType, locationOfMaxRms, rmsX,
+            saveMeasurePoint(markerType, locationOfMaxRms, rmsX,
                     rmsY, rmsZ, rmsXYZ, valueOfMaxRMS, dateFormatted,
                     maxRmsX, maxRmsY, maxRmsZ, xValueForMaxRMS, yValueForMaxRMS, zValueForMaxRMS);
             Toast.makeText(this, Html.fromHtml(comfortLevelMessage), Toast.LENGTH_SHORT).show();
             if (saveRAWFile) {
+                Log.d(TAG, "filter history count " + mFilterHistory.size());
+                Iterator<float[]> filterHistoryIterator = mFilterHistory.iterator();
+
+                while (filterHistoryIterator.hasNext()) {
+                    Log.d(TAG, " last point");
+                    float[] filterValues = filterHistoryIterator.next();
+                    if (!filterHistoryIterator.hasNext()) {
+                        mFilterHistory.remove(filterValues);
+                        mCurrents[DATA_X] = filterValues[DATA_X];
+                        mCurrents[DATA_Y] = filterValues[DATA_Y];
+                        mCurrents[DATA_Z] = filterValues[DATA_Z];
+                        mCurrents[DATA_R] = filterValues[DATA_R];
+                        mCurrents[4] = (float)rmsX;
+                        mCurrents[5] = (float)rmsY;
+                        mCurrents[6] = (float)rmsZ;
+                        mCurrents[7] = (float)rmsXYZ;
+                        mCurrents[8] = (float)xValueForMaxRMS;
+                        mCurrents[9] = (float)yValueForMaxRMS;
+                        mCurrents[10] = (float)zValueForMaxRMS;
+                        mCurrents[11] = (float)valueOfMaxRMS;
+                        mCurrents[12] = (float)maxRmsX;
+                        mCurrents[13] = (float)maxRmsY;
+                        mCurrents[14] = (float)maxRmsZ;
+                        mFilterHistory.add(mCurrents.clone());
+                        Log.d(TAG, "Added last point");
+                        for (int i = 4; i < 15; i++) {
+                            mCurrents[i] = Constants.INVALID_VALUE;
+                        }
+                    }
+                }
+
                 fileUtils.appendResultsToCsvFile(rawFileOutputStream, mFilterHistory, mRawHistory);
             }
         }
 
         if (rmsXYZ < RMS_TRACEHOLD_FIRST && !measureStarted && !recordPoint) {
-            measureStarted = true;
-            Log.d(TAG, "start measuring");
-            Toast.makeText(this, getString(R.string.sensor_calibrated ), Toast.LENGTH_LONG).show();
+            if (deviceOrientationChanged) {
+                String deviceOrientationChangedMessage = "Orijentacija uredjaja je promenjena u ";
+                if (deviceOrientation == HORIZONTAL_DEVICE_ORIENTATION) {
+                    deviceOrientationChangedMessage = deviceOrientationChangedMessage + "VERTIKALAN polozaj. ";
+                    deviceOrientation = VERICAL_DEVICE_ORIENTATION;
+                } else if (deviceOrientation == VERICAL_DEVICE_ORIENTATION) {
+                    deviceOrientationChangedMessage = deviceOrientationChangedMessage + "HORIZONTALAN polozaj. ";
+                    deviceOrientation = HORIZONTAL_DEVICE_ORIENTATION;
+                }
+                Toast.makeText(this,  deviceOrientationChangedMessage + getString(R.string.wait_for_sensor_calibration), Toast.LENGTH_LONG).show();
+
+            } else {
+                measureStarted = true;
+                Log.d(TAG, "start measuring");
+                String deviceOrientationMessage = " i postavljen u " + (deviceOrientation == HORIZONTAL_DEVICE_ORIENTATION ? "HORIZONTALAN polozaj. " : "VERTIKALAN polozaj. ");
+                Toast.makeText(this, getString(R.string.sensor_calibrated) + deviceOrientationMessage + getString(R.string.measurement_started), Toast.LENGTH_LONG).show();
+            }
         }
 
         mFilterHistory.clear();
@@ -758,12 +808,31 @@ public class AccelerometerActivity extends AppCompatActivity {
         locationUpdated = false;
     }
 
-    private void createPoint(String pointStyle, Location location, double rmsX,
-                             double rmsY, double rmsZ, double rmsXYZ, double maxRmsXYZ,
-                             String dateFormatted,  double maxRmsX, double maxRmsY, double maxRmsZ,
-                             double xForApeakXYZ, double yForApeakXYZ, double zForApeakXYZ) {
+    private void saveMeasurePoint(String pointStyle, Location location, double rmsX,
+                                  double rmsY, double rmsZ, double rmsXYZ, double maxRmsXYZ,
+                                  String dateFormatted,  double maxRmsX, double maxRmsY, double maxRmsZ,
+                                  double xForApeakXYZ, double yForApeakXYZ, double zForApeakXYZ) {
 
         double speedInKmPerHour = (location.getSpeed() * 3600) / 1000;
+
+        //dodaj tacku u kml
+        if (saveKMLFile) {
+            String kmlelement = KmlUtils.createKMLPointString(pointStyle, savedPointsCounter + 1, roundFourDecimals(rmsX),
+                    roundFourDecimals(rmsY), roundFourDecimals(rmsZ), roundFourDecimals(rmsXYZ), roundFourDecimals(maxRmsXYZ),
+                    dateFormatted, roundFourDecimals(speedInKmPerHour), location.getLatitude(), location.getLongitude(),
+                    roundFourDecimals(location.getAltitude()), roundFourDecimals(maxRmsX), roundFourDecimals(maxRmsY),
+                    roundFourDecimals(maxRmsZ), roundFourDecimals(xForApeakXYZ), roundFourDecimals(yForApeakXYZ), roundFourDecimals(zForApeakXYZ));
+            fileUtils.appendResultsToKmlFile(kmlFileOutputStream, kmlelement);
+        }
+
+        // calculate average values
+        if (rmsXYZ < RMS_TRACEHOLD_FIRST) {
+            numberOfGreenMarkers++;
+        } else if (RMS_TRACEHOLD_FIRST <= rmsXYZ  &&  rmsXYZ <= RMS_TRACEHOLD_SECOND) {
+            numberOfYellowMarkers++;
+        } else {
+            numberOfRedMarkers++;
+        }
 
         if (location.hasSpeed()) {
             validLocationsWithSpeed++;
@@ -775,67 +844,68 @@ public class AccelerometerActivity extends AppCompatActivity {
             Log.d(TAG, "altitude counter " + validLocationsWithAltitude);
         }
 
-        //dodaj tacku u kml
-        if (saveKMLFile) {
-            String kmlelement = KmlUtils.createKMLPointString(pointStyle, kmlPointsCounter + 1, roundFourDecimals(rmsX),
-                    roundFourDecimals(rmsY), roundFourDecimals(rmsZ), roundFourDecimals(rmsXYZ), roundFourDecimals(maxRmsXYZ),
-                    dateFormatted, roundFourDecimals(speedInKmPerHour), location.getLatitude(), location.getLongitude(),
-                    roundFourDecimals(location.getAltitude()), roundFourDecimals(maxRmsX), roundFourDecimals(maxRmsY),
-                    roundFourDecimals(maxRmsZ), roundFourDecimals(xForApeakXYZ), roundFourDecimals(yForApeakXYZ), roundFourDecimals(zForApeakXYZ));
-            fileUtils.appendResultsToKmlFile(kmlFileOutputStream, kmlelement);
-            kmlPointsCounter++;
+        averageRMSX += rmsX;
+        averageRMSY += rmsY;
+        averageRMSZ += rmsZ;
+        averageRMSXYZ += rmsXYZ;
+        averageMaxRMSXYZ += maxRmsXYZ;
+        averageMaxRMSX += maxRmsX;
+        averageMaxRMSY += maxRmsY;
+        averageMaxRMSZ += maxRmsZ;
+        averageX += xForApeakXYZ;
+        averageY += yForApeakXYZ;
+        averageZ += zForApeakXYZ;
+        averageSpeed += speedInKmPerHour;
+        averageAltitude += location.getAltitude();
+        savedPointsCounter++;
 
-            if (rmsXYZ < RMS_TRACEHOLD_FIRST) {
-                numberOfGreenMarkers++;
-            } else if (RMS_TRACEHOLD_FIRST <= rmsXYZ  &&  rmsXYZ <= RMS_TRACEHOLD_SECOND) {
-                numberOfYellowMarkers++;
-            } else {
-                numberOfRedMarkers++;
-            }
+        //save results into backup txt file
+        String txtPointString = TxtFileUtils.createTxtPointString(measurementId, userId, roundFourDecimals(rmsX),
+                roundFourDecimals(rmsY), roundFourDecimals(rmsZ), roundFourDecimals(rmsXYZ), roundFourDecimals(maxRmsXYZ),
+                dateFormatted, roundFourDecimals(speedInKmPerHour), location.getLatitude(), location.getLongitude(),
+                roundFourDecimals(maxRmsX), roundFourDecimals(maxRmsY), roundFourDecimals(maxRmsZ),
+                roundFourDecimals(xForApeakXYZ), roundFourDecimals(yForApeakXYZ), roundFourDecimals(zForApeakXYZ));
+        fileUtils.appendResultsToTxtFile(txtFileOutputStream, txtPointString);
 
-            averageRMSX += rmsX;
-            averageRMSY += rmsY;
-            averageRMSZ += rmsZ;
-            averageRMSXYZ += rmsXYZ;
-            averageMaxRMSXYZ += maxRmsXYZ;
-            averageMaxRMSX += maxRmsX;
-            averageMaxRMSY += maxRmsY;
-            averageMaxRMSZ += maxRmsZ;
-            averageX += xForApeakXYZ;
-            averageY += yForApeakXYZ;
-            averageZ += zForApeakXYZ;
-            averageSpeed += speedInKmPerHour;
-            averageAltitude += location.getAltitude();
-        }
+        // send measure results to server
+       sendPointOnServer(location, rmsX, rmsY, rmsZ, rmsXYZ, maxRmsXYZ, dateFormatted,
+               maxRmsX, maxRmsY, maxRmsZ, xForApeakXYZ, yForApeakXYZ, zForApeakXYZ, speedInKmPerHour, measurementDescription);
+    }
+
+    private void sendPointOnServer(Location location, double rmsX,
+                                   double rmsY, double rmsZ, double rmsXYZ, double maxRmsXYZ,
+                                   String dateFormatted,  double maxRmsX, double maxRmsY, double maxRmsZ,
+                                   double xForApeakXYZ, double yForApeakXYZ, double zForApeakXYZ, double speedInKmPerHour,
+                                   String pointDescription) {
 
         if (!SessionManager.getInstance(this).isLocalUser()) {
             //posalji tacku na server
             ArrayList<NameValuePair> postParameters = new ArrayList<>();
             postParameters.add(new BasicNameValuePair(Constants.ID_K, userId));
             postParameters.add(new BasicNameValuePair(Constants.ID_M, measurementId));
-            postParameters.add(new BasicNameValuePair(Constants.RMS_X, String.valueOf(rmsX)));
-            postParameters.add(new BasicNameValuePair(Constants.RMS_Y, String.valueOf(rmsY)));
-            postParameters.add(new BasicNameValuePair(Constants.RMS_Z, String.valueOf(rmsZ)));
+            postParameters.add(new BasicNameValuePair(Constants.RMS_X, String.valueOf(roundFourDecimals(rmsX))));
+            postParameters.add(new BasicNameValuePair(Constants.RMS_Y, String.valueOf(roundFourDecimals(rmsY))));
+            postParameters.add(new BasicNameValuePair(Constants.RMS_Z, String.valueOf(roundFourDecimals(rmsZ))));
            /*postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_X, String.valueOf(maxRmsX)));
             postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Y, String.valueOf(maxRmsY)));
             postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Z, String.valueOf(maxRmsZ)));*/
-            postParameters.add(new BasicNameValuePair(Constants.X, String.valueOf(xForApeakXYZ)));
-            postParameters.add(new BasicNameValuePair(Constants.Y, String.valueOf(yForApeakXYZ)));
-            postParameters.add(new BasicNameValuePair(Constants.Z, String.valueOf(zForApeakXYZ)));
-            postParameters.add(new BasicNameValuePair(Constants.A_RMS, String.valueOf(rmsXYZ)));
-            postParameters.add(new BasicNameValuePair(Constants.A_PEAK, String.valueOf(maxRmsXYZ)));
+            postParameters.add(new BasicNameValuePair(Constants.X, String.valueOf(roundFourDecimals(xForApeakXYZ))));
+            postParameters.add(new BasicNameValuePair(Constants.Y, String.valueOf(roundFourDecimals(yForApeakXYZ))));
+            postParameters.add(new BasicNameValuePair(Constants.Z, String.valueOf(roundFourDecimals(zForApeakXYZ))));
+            postParameters.add(new BasicNameValuePair(Constants.A_RMS, String.valueOf(roundFourDecimals(rmsXYZ))));
+            postParameters.add(new BasicNameValuePair(Constants.A_PEAK, String.valueOf(roundFourDecimals(maxRmsXYZ))));
             postParameters.add(new BasicNameValuePair(Constants.TIME, dateFormatted));
-            postParameters.add(new BasicNameValuePair(Constants.SPEED, String.valueOf(speedInKmPerHour)));
+            postParameters.add(new BasicNameValuePair(Constants.SPEED, String.valueOf(roundFourDecimals(speedInKmPerHour))));
             postParameters.add(new BasicNameValuePair(Constants.LONGITUDE, String.valueOf(location.getLongitude())));
             postParameters.add(new BasicNameValuePair(Constants.LATITUDE, String.valueOf(location.getLatitude())));
-         //   postParameters.add(new BasicNameValuePair(Constants.DESCRIPTION, measurementDescription));
+            postParameters.add(new BasicNameValuePair(Constants.DESCRIPTION, pointDescription));
 
-            String response = null;
+            String response;
 
             try {
 
                 response = CustomHttpClient.executeHttpPost(UrlAddresses.AddPointURL(), postParameters);
-                String res = response.toString();
+                String res = response;
                 res = res.replaceAll("\\s+", "");
                 Log.d(TAG, res);
             } catch (Exception e) {
@@ -843,8 +913,6 @@ public class AccelerometerActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-
-
     }
 
     private void stopMeasurement() {
@@ -855,12 +923,12 @@ public class AccelerometerActivity extends AppCompatActivity {
             postParameters.add(new BasicNameValuePair(Constants.ID_K, userId));
             postParameters.add(new BasicNameValuePair(Constants.ACTION, Constants.ACTION_STOP));
 
-            String response = null;
+            String response;
 
             try {
 
                 response = CustomHttpClient.executeHttpPost(UrlAddresses.StopMesurementURL(), postParameters);
-                String res = response.toString();
+                String res = response;
                 res= res.replaceAll("\\s+", "");
 
                 // Prebacivanje res u integer da bi moglo da se primeni u if-u
@@ -1012,9 +1080,9 @@ public class AccelerometerActivity extends AppCompatActivity {
     }
 
     private void saveHistory() {
+
         // Zaustavi snimanje
         mRecording = false;
-
         // Zaustavi graf
         stopGraph();
 
@@ -1022,18 +1090,17 @@ public class AccelerometerActivity extends AppCompatActivity {
             fileUtils.finishEditingCsvFile(rawFileOutputStream);
         }
 
-
         if (saveKMLFile) {
 
             if (locationOfMaxRms != null) {
                 Log.d(TAG, "tacke " + numberOfGreenMarkers);
-                String finalKMLpoint = KmlUtils.createFinalKMLPointString(kmlPointsCounter, numberOfGreenMarkers,
-                        numberOfYellowMarkers, numberOfRedMarkers, roundFourDecimals(averageRMSX/kmlPointsCounter),
-                        roundFourDecimals(averageRMSY/kmlPointsCounter), roundFourDecimals(averageRMSZ/kmlPointsCounter),
-                        roundFourDecimals(averageRMSXYZ/kmlPointsCounter), roundFourDecimals(averageMaxRMSXYZ/kmlPointsCounter),
-                        roundFourDecimals(averageMaxRMSX/kmlPointsCounter), roundFourDecimals(averageMaxRMSY/kmlPointsCounter),
-                        roundFourDecimals(averageMaxRMSZ/kmlPointsCounter), roundFourDecimals(averageX/kmlPointsCounter),
-                        roundFourDecimals(averageY / kmlPointsCounter), roundFourDecimals(averageZ / kmlPointsCounter),
+                String finalKMLpoint = KmlUtils.createFinalKMLPointString(savedPointsCounter, numberOfGreenMarkers,
+                        numberOfYellowMarkers, numberOfRedMarkers, roundFourDecimals(averageRMSX/savedPointsCounter),
+                        roundFourDecimals(averageRMSY/savedPointsCounter), roundFourDecimals(averageRMSZ/savedPointsCounter),
+                        roundFourDecimals(averageRMSXYZ/savedPointsCounter), roundFourDecimals(averageMaxRMSXYZ/savedPointsCounter),
+                        roundFourDecimals(averageMaxRMSX/savedPointsCounter), roundFourDecimals(averageMaxRMSY/savedPointsCounter),
+                        roundFourDecimals(averageMaxRMSZ/savedPointsCounter), roundFourDecimals(averageX/savedPointsCounter),
+                        roundFourDecimals(averageY / savedPointsCounter), roundFourDecimals(averageZ / savedPointsCounter),
                         roundFourDecimals(averageSpeed / validLocationsWithSpeed), roundFourDecimals(averageAltitude / validLocationsWithAltitude),
                         locationOfMaxRms.getLatitude(), locationOfMaxRms.getLongitude());
 
@@ -1043,11 +1110,25 @@ public class AccelerometerActivity extends AppCompatActivity {
             fileUtils.finishEditingKmlFile(kmlFileOutputStream);
         }
 
+        //send average results to server
+        String averagePointDescription = "Ukupan broj snimljenih tacaka razlicitog nivoa udobnosti: " + savedPointsCounter +
+                ". Ukupan broj udobnih tacaka: " + numberOfGreenMarkers + ". Ukupan broj srednje udobnih tacaka: " + numberOfYellowMarkers + ". Ukupan broj neudobnih tacaka: " + numberOfRedMarkers + ".";
+        sendPointOnServer(locationOfMaxRms, averageRMSX/savedPointsCounter, averageRMSY/savedPointsCounter, averageRMSZ/savedPointsCounter,
+                averageRMSXYZ/savedPointsCounter, averageMaxRMSXYZ/savedPointsCounter, getFormattedDate(locationOfMaxRms.getTime()),
+                averageMaxRMSX/savedPointsCounter, averageMaxRMSY / savedPointsCounter, averageMaxRMSZ/savedPointsCounter, averageX/savedPointsCounter,
+                averageY/savedPointsCounter, averageZ/savedPointsCounter, averageSpeed/validLocationsWithSpeed, averagePointDescription);
+
+        if (txtFileOutputStream != null) {
+            fileUtils.finishEditingTxtFile(txtFileOutputStream);
+        }
+
         mRawHistory.clear();
         mFilterHistory.clear();
         mGraphView.clearGraphHistory();
         mTempFilterList.clear();
     }
+
+
 
     private static final String TAG = "AkcelerometerActivity";
 
@@ -1070,7 +1151,7 @@ public class AccelerometerActivity extends AppCompatActivity {
     private static final int HORIZONTAL_DEVICE_ORIENTATION = 0;
     private static final int VERICAL_DEVICE_ORIENTATION = 1;
 
-    private float[] mCurrents = new float[7];
+    private float[] mCurrents = new float[15];
     private ConcurrentLinkedQueue<float[]> mRawHistory = new ConcurrentLinkedQueue<>();
     private ConcurrentLinkedQueue<float[]> mFilterHistory = new ConcurrentLinkedQueue<>();
     private ConcurrentLinkedQueue<float[]> mTempFilterList = new ConcurrentLinkedQueue<>();
@@ -1085,10 +1166,11 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     private boolean saveKMLFile = false;
     private boolean saveRAWFile = false;
-    private int kmlPointsCounter = 0;
+    private int savedPointsCounter = 0;
     private FileUtils fileUtils;
     private FileOutputStream rawFileOutputStream;
     private FileOutputStream kmlFileOutputStream;
+    private FileOutputStream txtFileOutputStream;
 
     private String measurementId;
     private String userId;
@@ -1107,6 +1189,7 @@ public class AccelerometerActivity extends AppCompatActivity {
     private int samplesCount = 0;
     private int measureUnit = UNIT_IN_G;
     private int deviceOrientation = HORIZONTAL_DEVICE_ORIENTATION;
+    private boolean deviceOrientationChanged = false;
 
     // Kasnjenje podataka predefinisan za pocetak rada na SENSOR_DELAY_UI
     // Kroz implementiranu logiku moguce ga je prome u meniju kasnije

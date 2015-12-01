@@ -119,7 +119,7 @@ public class LoginActivity extends AppCompatActivity {
 
         if (username.equalsIgnoreCase("test") && password.equalsIgnoreCase("test")) {
             ProgressDialogUtils.dismissProgressDialog(progressDialog);
-            SessionManager.getInstance(this).createLoginSession(username, password, serverURL, true);
+            SessionManager.getInstance(this).createLoginSession(username, "0", serverURL, true);
             Toast.makeText(this, "Ulogovani ste kao lokalni korisnik", Toast.LENGTH_SHORT).show();
             Intent newIntent = new Intent(this, CreateNewMeasurement.class);
             startActivity(newIntent);
