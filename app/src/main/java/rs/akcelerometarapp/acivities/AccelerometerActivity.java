@@ -1137,9 +1137,9 @@ public class AccelerometerActivity extends AppCompatActivity {
         postParameters.add(new BasicNameValuePair(Constants.RMS_X, String.valueOf(roundFourDecimals(rmsX))));
         postParameters.add(new BasicNameValuePair(Constants.RMS_Y, String.valueOf(roundFourDecimals(rmsY))));
         postParameters.add(new BasicNameValuePair(Constants.RMS_Z, String.valueOf(roundFourDecimals(rmsZ))));
-           /*postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_X, String.valueOf(maxRmsX)));
+           postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_X, String.valueOf(maxRmsX)));
             postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Y, String.valueOf(maxRmsY)));
-            postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Z, String.valueOf(maxRmsZ)));*/
+            postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Z, String.valueOf(maxRmsZ)));
         postParameters.add(new BasicNameValuePair(Constants.X, String.valueOf(roundFourDecimals(xForApeakXYZ))));
         postParameters.add(new BasicNameValuePair(Constants.Y, String.valueOf(roundFourDecimals(yForApeakXYZ))));
         postParameters.add(new BasicNameValuePair(Constants.Z, String.valueOf(roundFourDecimals(zForApeakXYZ))));
