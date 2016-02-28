@@ -37,6 +37,12 @@ public class Constants {
     public static final String LATITUDE = "latitude";
     public static final String LONGITUDE = "longitude";
     public static final String DESCRIPTION = "opis";
+    public static final String DESCRIPTION_ANALIZA = "analiza";
+    public static final String DESCRIPTION_MERENJE = "merenje";
+    public static final String NUMBER_OF_GREEN_MARKERS = "numberOfGreenMarkers";
+    public static final String NUMBER_OF_YELLOW_MARKERS = "numberOfYellowMarkers";
+    public static final String NUMBER_OF_RED_MARKERS = "numberOfRedMarkers";
+    public static final String SAVED_POINTS_COUNTER = "savedPointsCounter";
 
     public static final String ACTION = "akcija";
     public static final String ACTION_START = "start";

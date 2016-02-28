@@ -9,7 +9,6 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.StrictMode;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -884,7 +883,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         if (!SessionManager.getInstance(this).isLocalUser()) {
             //posalji tacku na server
-            executeLoginRequest(location, rmsX, rmsY, rmsZ, rmsXYZ,
+            executeSendPointToServerRequest(location, rmsX, rmsY, rmsZ, rmsXYZ,
                     maxRmsXYZ, dateFormatted, maxRmsX, maxRmsY, maxRmsZ, xForApeakXYZ,
                     yForApeakXYZ, zForApeakXYZ, speedInKmPerHour, pointDescription, isLastPoint);
         }
@@ -1074,10 +1073,10 @@ public class AccelerometerActivity extends AppCompatActivity {
         //send average results to server
         String averagePointDescription = "Ukupan broj snimljenih tacaka razlicitog nivoa udobnosti: " + savedPointsCounter +
                 ". Ukupan broj udobnih tacaka: " + numberOfGreenMarkers + ". Ukupan broj srednje udobnih tacaka: " + numberOfYellowMarkers + ". Ukupan broj neudobnih tacaka: " + numberOfRedMarkers + ".";
-        sendPointOnServer(locationOfMaxRms, averageRMSX/savedPointsCounter, averageRMSY/savedPointsCounter, averageRMSZ/savedPointsCounter,
-                averageRMSXYZ/savedPointsCounter, averageMaxRMSXYZ/savedPointsCounter, getFormattedDate(locationOfMaxRms.getTime()),
-                averageMaxRMSX/savedPointsCounter, averageMaxRMSY / savedPointsCounter, averageMaxRMSZ/savedPointsCounter, averageX/savedPointsCounter,
-                averageY/savedPointsCounter, averageZ/savedPointsCounter, averageSpeed/validLocationsWithSpeed, averagePointDescription, true);
+        sendPointOnServer(locationOfMaxRms, averageRMSX / savedPointsCounter, averageRMSY / savedPointsCounter, averageRMSZ / savedPointsCounter,
+                averageRMSXYZ / savedPointsCounter, averageMaxRMSXYZ / savedPointsCounter, getFormattedDate(locationOfMaxRms.getTime()),
+                averageMaxRMSX / savedPointsCounter, averageMaxRMSY / savedPointsCounter, averageMaxRMSZ / savedPointsCounter, averageX / savedPointsCounter,
+                averageY / savedPointsCounter, averageZ / savedPointsCounter, averageSpeed / validLocationsWithSpeed, averagePointDescription, true);
 
         if (txtFileOutputStream != null) {
             fileUtils.finishEditingTxtFile(txtFileOutputStream);
@@ -1091,7 +1090,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     //********************************* Communication with sever *********************************//
 
-    private void executeLoginRequest(Location location, double rmsX,
+    private void executeSendPointToServerRequest(Location location, double rmsX,
                                      double rmsY, double rmsZ, double rmsXYZ, double maxRmsXYZ,
                                      String dateFormatted,  double maxRmsX, double maxRmsY, double maxRmsZ,
                                      double xForApeakXYZ, double yForApeakXYZ, double zForApeakXYZ, double speedInKmPerHour,
@@ -1099,7 +1098,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         sendPointToServerSubscription = sendPointToServerObservable(location, rmsX, rmsY, rmsZ, rmsXYZ,
                                         maxRmsXYZ, dateFormatted, maxRmsX, maxRmsY, maxRmsZ, xForApeakXYZ,
-                                        yForApeakXYZ, zForApeakXYZ, speedInKmPerHour, pointDescription)
+                                        yForApeakXYZ, zForApeakXYZ, speedInKmPerHour, pointDescription, isLastPoint)
                 .subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<String>() {
@@ -1129,7 +1128,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                                                  double rmsY, double rmsZ, double rmsXYZ, double maxRmsXYZ,
                                                  String dateFormatted,  double maxRmsX, double maxRmsY, double maxRmsZ,
                                                  double xForApeakXYZ, double yForApeakXYZ, double zForApeakXYZ, double speedInKmPerHour,
-                                                 String pointDescription) {
+                                                 String pointDescription, boolean isLastPoint) {
 
         ArrayList<NameValuePair> postParameters = new ArrayList<>();
         postParameters.add(new BasicNameValuePair(Constants.ID_K, userId));
@@ -1149,7 +1148,14 @@ public class AccelerometerActivity extends AppCompatActivity {
         postParameters.add(new BasicNameValuePair(Constants.SPEED, String.valueOf(roundFourDecimals(speedInKmPerHour))));
         postParameters.add(new BasicNameValuePair(Constants.LONGITUDE, String.valueOf(location.getLongitude())));
         postParameters.add(new BasicNameValuePair(Constants.LATITUDE, String.valueOf(location.getLatitude())));
-        postParameters.add(new BasicNameValuePair(Constants.DESCRIPTION, pointDescription));
+        postParameters.add(new BasicNameValuePair(Constants.DESCRIPTION, isLastPoint ? Constants.DESCRIPTION_ANALIZA : Constants.DESCRIPTION_MERENJE));
+
+        if (isLastPoint) {
+            postParameters.add(new BasicNameValuePair(Constants.SAVED_POINTS_COUNTER, String.valueOf(savedPointsCounter)));
+            postParameters.add(new BasicNameValuePair(Constants.NUMBER_OF_GREEN_MARKERS, String.valueOf(numberOfGreenMarkers)));
+            postParameters.add(new BasicNameValuePair(Constants.NUMBER_OF_YELLOW_MARKERS, String.valueOf(numberOfYellowMarkers)));
+            postParameters.add(new BasicNameValuePair(Constants.NUMBER_OF_RED_MARKERS, String.valueOf(numberOfRedMarkers)));
+        }
 
         Log.d(TAG, "URL " + UrlAddresses.AddPointURL());
         try {
@@ -1166,14 +1172,14 @@ public class AccelerometerActivity extends AppCompatActivity {
                                                           final double maxRmsXYZ, final String dateFormatted, final double maxRmsX,
                                                           final double maxRmsY, final double maxRmsZ, final double xForApeakXYZ,
                                                           final double yForApeakXYZ, final double zForApeakXYZ,
-                                                          final double speedInKmPerHour, final String pointDescription) {
+                                                          final double speedInKmPerHour, final String pointDescription, final boolean isLastPoint) {
 
         return Observable.defer(new Func0<Observable<String>>() {
             @Override
             public Observable<String> call() {
                 return Observable.just(setUpSendPointToServerRequest(location, rmsX, rmsY, rmsZ, rmsXYZ,
                         maxRmsXYZ, dateFormatted, maxRmsX, maxRmsY, maxRmsZ, xForApeakXYZ, yForApeakXYZ,
-                        zForApeakXYZ, speedInKmPerHour, pointDescription));
+                        zForApeakXYZ, speedInKmPerHour, pointDescription, isLastPoint));
             }
         });
     }
