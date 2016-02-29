@@ -621,6 +621,8 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     private void getDetectionLocation() {
         updatableLocationSubscription = locationUpdatesObservable
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<Location>() {
                     @Override
                     public void onCompleted() {
@@ -635,6 +637,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                     @Override
                     public void onNext(Location location) {
 
+                        Log.d(TAG, "GPS Next");
                         if (locationOfMaxRms == null) {
                             Toast.makeText(AccelerometerActivity.this, getString(R.string.GPS_found), Toast.LENGTH_LONG).show();
                         }
@@ -647,7 +650,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                                 locationUpdated = true;
                             }
                         } else {
-                            locationOfMaxRms=location;
+                            locationOfMaxRms = location;
                             locationUpdated = true;
                         }
                     }
@@ -1136,9 +1139,9 @@ public class AccelerometerActivity extends AppCompatActivity {
         postParameters.add(new BasicNameValuePair(Constants.RMS_X, String.valueOf(roundFourDecimals(rmsX))));
         postParameters.add(new BasicNameValuePair(Constants.RMS_Y, String.valueOf(roundFourDecimals(rmsY))));
         postParameters.add(new BasicNameValuePair(Constants.RMS_Z, String.valueOf(roundFourDecimals(rmsZ))));
-           postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_X, String.valueOf(maxRmsX)));
-            postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Y, String.valueOf(maxRmsY)));
-            postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Z, String.valueOf(maxRmsZ)));
+        postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_X, String.valueOf(maxRmsX)));
+        postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Y, String.valueOf(maxRmsY)));
+        postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Z, String.valueOf(maxRmsZ)));
         postParameters.add(new BasicNameValuePair(Constants.X, String.valueOf(roundFourDecimals(xForApeakXYZ))));
         postParameters.add(new BasicNameValuePair(Constants.Y, String.valueOf(roundFourDecimals(yForApeakXYZ))));
         postParameters.add(new BasicNameValuePair(Constants.Z, String.valueOf(roundFourDecimals(zForApeakXYZ))));
