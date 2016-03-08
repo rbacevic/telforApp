@@ -210,6 +210,8 @@ public class FileUtils {
         try {
             // Unos podataka
             fileOutputStream.write(txtDataString.getBytes());
+            fileOutputStream.write(("\r\n").getBytes());
+
         } catch (Exception e) {
             e.printStackTrace();
         }
