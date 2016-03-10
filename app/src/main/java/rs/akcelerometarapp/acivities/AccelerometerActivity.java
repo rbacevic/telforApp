@@ -870,7 +870,8 @@ public class AccelerometerActivity extends AppCompatActivity {
                 roundFourDecimals(rmsY), roundFourDecimals(rmsZ), roundFourDecimals(rmsXYZ), roundFourDecimals(maxRmsXYZ),
                 dateFormatted, roundFourDecimals(speedInKmPerHour), location.getLatitude(), location.getLongitude(),
                 roundFourDecimals(maxRmsX), roundFourDecimals(maxRmsY), roundFourDecimals(maxRmsZ),
-                roundFourDecimals(xForApeakXYZ), roundFourDecimals(yForApeakXYZ), roundFourDecimals(zForApeakXYZ));
+                roundFourDecimals(xForApeakXYZ), roundFourDecimals(yForApeakXYZ), roundFourDecimals(zForApeakXYZ),
+                Constants.DESCRIPTION_MERENJE, 0, 0,0 ,0);
         fileUtils.appendResultsToTxtFile(txtFileOutputStream, txtPointString);
 
         // send measure results to server
@@ -1082,6 +1083,28 @@ public class AccelerometerActivity extends AppCompatActivity {
                 averageY / savedPointsCounter, averageZ / savedPointsCounter, averageSpeed / validLocationsWithSpeed, averagePointDescription, true);
 
         if (txtFileOutputStream != null) {
+
+            String txtPointString = TxtFileUtils.createTxtPointString(measurementId, userId,
+                    roundFourDecimals(averageRMSX / savedPointsCounter),
+                    roundFourDecimals(averageRMSY / savedPointsCounter),
+                    roundFourDecimals(averageRMSZ / savedPointsCounter),
+                    roundFourDecimals(averageRMSXYZ / savedPointsCounter),
+                    roundFourDecimals(averageMaxRMSXYZ / savedPointsCounter),
+                    getFormattedDate(locationOfMaxRms.getTime()),
+                    roundFourDecimals(averageSpeed / validLocationsWithSpeed),
+                    locationOfMaxRms.getLatitude(),
+                    locationOfMaxRms.getLongitude(),
+                    roundFourDecimals(averageMaxRMSX / savedPointsCounter),
+                    roundFourDecimals(averageMaxRMSY / savedPointsCounter),
+                    roundFourDecimals(averageMaxRMSZ / savedPointsCounter),
+                    roundFourDecimals(averageX / savedPointsCounter),
+                    roundFourDecimals(averageY / savedPointsCounter),
+                    roundFourDecimals(averageZ / savedPointsCounter),
+                    Constants.DESCRIPTION_ANALIZA,
+                    numberOfGreenMarkers, numberOfYellowMarkers,
+                    numberOfRedMarkers, savedPointsCounter);
+            fileUtils.appendResultsToTxtFile(txtFileOutputStream, txtPointString);
+
             fileUtils.finishEditingTxtFile(txtFileOutputStream);
         }
 
@@ -1139,9 +1162,9 @@ public class AccelerometerActivity extends AppCompatActivity {
         postParameters.add(new BasicNameValuePair(Constants.RMS_X, String.valueOf(roundFourDecimals(rmsX))));
         postParameters.add(new BasicNameValuePair(Constants.RMS_Y, String.valueOf(roundFourDecimals(rmsY))));
         postParameters.add(new BasicNameValuePair(Constants.RMS_Z, String.valueOf(roundFourDecimals(rmsZ))));
-        postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_X, String.valueOf(maxRmsX)));
-        postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Y, String.valueOf(maxRmsY)));
-        postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Z, String.valueOf(maxRmsZ)));
+        postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_X, String.valueOf(roundFourDecimals(maxRmsX))));
+        postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Y, String.valueOf(roundFourDecimals(maxRmsY))));
+        postParameters.add(new BasicNameValuePair(Constants.MAX_RMS_Z, String.valueOf(roundFourDecimals(maxRmsZ))));
         postParameters.add(new BasicNameValuePair(Constants.X, String.valueOf(roundFourDecimals(xForApeakXYZ))));
         postParameters.add(new BasicNameValuePair(Constants.Y, String.valueOf(roundFourDecimals(yForApeakXYZ))));
         postParameters.add(new BasicNameValuePair(Constants.Z, String.valueOf(roundFourDecimals(zForApeakXYZ))));

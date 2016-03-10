@@ -4,6 +4,8 @@ import android.text.format.DateFormat;
 
 import java.util.ArrayList;
 
+import rs.akcelerometarapp.constants.Constants;
+
 /**
  * Created by RADEEE on 30-Nov-15.
  */
@@ -13,7 +15,8 @@ public class TxtFileUtils {
                                               String rmsY, String rmsZ, String rmsXYZ, String maxRmsXYZ,
                                               String dateFormatted, String speedInKmPerHour, double latitude,
                                               double longitude, String maxRmsX, String maxRmsY, String maxRmsZ,
-                                              String xValueForApeak, String yValueForApeak, String zValueForApeak) {
+                                              String xValueForApeak, String yValueForApeak, String zValueForApeak,
+                                              String description, int numOfGreen, int numOfYellow, int numOfRed, int numOfMarkers) {
 
 
         ArrayList<String> txtDataString = new ArrayList<>();
@@ -34,6 +37,14 @@ public class TxtFileUtils {
         txtDataString.add(maxRmsX);
         txtDataString.add(maxRmsY);
         txtDataString.add(maxRmsZ);
+        txtDataString.add(description);
+
+        if (description.equalsIgnoreCase(Constants.DESCRIPTION_ANALIZA)) {
+            txtDataString.add(String.valueOf(numOfGreen));
+            txtDataString.add(String.valueOf(numOfYellow));
+            txtDataString.add(String.valueOf(numOfRed));
+            txtDataString.add(String.valueOf(numOfMarkers));
+        }
 
         String formattedString = createStringFromArraySeparatedWithTilda(txtDataString, true).toString();
         return formattedString;
