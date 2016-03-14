@@ -18,7 +18,6 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.CheckBox;
@@ -81,7 +80,7 @@ public class AccelerometerActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        Log.i(TAG, "MainActivity.onCreate()");
+        Log.i(TAG, "AccelerometerActivity.onCreate()");
         super.onCreate(savedInstanceState);
 
         Window window = getWindow();
@@ -125,7 +124,7 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     @Override
     protected void onStart() {
-        Log.i(TAG, "MainActivity.onStart()");
+        Log.i(TAG, "AccelerometerActivity.onStart()");
         //Inicijalizacija
         initialize();
         super.onStart();
@@ -133,21 +132,21 @@ public class AccelerometerActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-        Log.i(TAG, "MainActivity.onResume()");
+        Log.i(TAG, "AccelerometerActivity.onResume()");
         startGraph();
         super.onResume();
     }
 
     @Override
     protected void onPause() {
-        Log.i(TAG, "MainActivity.onPause()");
+        Log.i(TAG, "AccelerometerActivity.onPause()");
         stopGraph();
         super.onPause();
     }
 
     @Override
     protected void onStop() {
-        Log.i(TAG, "MainActivity.onStop()");
+        Log.i(TAG, "AccelerometerActivity.onStop()");
         sensor.unsubscribe();
         super.onStop();
     }
@@ -160,18 +159,6 @@ public class AccelerometerActivity extends AppCompatActivity {
     @Override
     final public void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
-    }
-
-    @Override
-    public void onBackPressed() {
-       /* super.onBackPressed();
-        if (mRecording) {
-            //stopMeasurement();
-            Toast.makeText(this, getString(R.string.save_complated), Toast.LENGTH_LONG).show();
-            saveHistory();
-            updatableLocationSubscription.unsubscribe();
-            finish();
-        }*/
     }
 
     @Override
@@ -377,14 +364,10 @@ public class AccelerometerActivity extends AppCompatActivity {
         filterRateBar.setProgress((int) (mFilterRate * 100));
         seekBarChangeListener(filterRateBar).subscribe(new Subscriber<Float>() {
             @Override
-            public void onCompleted() {
-
-            }
+            public void onCompleted() {}
 
             @Override
-            public void onError(Throwable e) {
-
-            }
+            public void onError(Throwable e) {}
 
             @Override
             public void onNext(Float aFloat) {
@@ -1001,7 +984,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                             try {
                                 status.startResolutionForResult(AccelerometerActivity.this, REQUEST_CHECK_SETTINGS);
                             } catch (IntentSender.SendIntentException th) {
-                                Log.e("MainActivity", "Error opening settings activity.", th);
+                                Log.e("AccelerometerActivity", "Error opening settings activity.", th);
                             }
                         }
                     }

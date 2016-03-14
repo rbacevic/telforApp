@@ -58,7 +58,7 @@ public class TxtFileUtils {
         for (int angle = 0; angle < strings.size(); angle++) {
             txtFileData.append(strings.get(angle));
             if (angle < strings.size() - 1) {
-                txtFileData.append("~");
+                txtFileData.append("--");
             }
         }
         if (addNewLine) {
