@@ -1058,6 +1058,12 @@ public class AccelerometerActivity extends AppCompatActivity {
 
             if (locationOfMaxRms != null) {
                 Log.d(TAG, "tacke " + numberOfGreenMarkers);
+
+                Location location = locationOfMaxRms;
+
+                location.setLatitude(location.getLatitude() + 0.001);
+                location.setLongitude(location.getLongitude() + 0.001);
+
                 String finalKMLpoint = KmlUtils.createFinalKMLPointString(savedPointsCounter, numberOfGreenMarkers,
                         numberOfYellowMarkers, numberOfRedMarkers, roundFourDecimals(averageRMSX/savedPointsCounter),
                         roundFourDecimals(averageRMSY/savedPointsCounter), roundFourDecimals(averageRMSZ/savedPointsCounter),
@@ -1066,7 +1072,7 @@ public class AccelerometerActivity extends AppCompatActivity {
                         roundFourDecimals(averageMaxRMSZ/savedPointsCounter), roundFourDecimals(averageX/savedPointsCounter),
                         roundFourDecimals(averageY / savedPointsCounter), roundFourDecimals(averageZ / savedPointsCounter),
                         roundFourDecimals(averageSpeed / validLocationsWithSpeed), roundFourDecimals(averageAltitude / validLocationsWithAltitude),
-                        locationOfMaxRms.getLatitude(), locationOfMaxRms.getLongitude());
+                        location.getLatitude(), location.getLongitude());
 
                 fileUtils.appendResultsToKmlFile(kmlFileOutputStream, finalKMLpoint);
             }
@@ -1172,8 +1178,6 @@ public class AccelerometerActivity extends AppCompatActivity {
         postParameters.add(new BasicNameValuePair(Constants.A_PEAK, String.valueOf(roundFourDecimals(maxRmsXYZ))));
         postParameters.add(new BasicNameValuePair(Constants.TIME, dateFormatted));
         postParameters.add(new BasicNameValuePair(Constants.SPEED, String.valueOf(roundFourDecimals(speedInKmPerHour))));
-        postParameters.add(new BasicNameValuePair(Constants.LONGITUDE, String.valueOf(location.getLongitude())));
-        postParameters.add(new BasicNameValuePair(Constants.LATITUDE, String.valueOf(location.getLatitude())));
         postParameters.add(new BasicNameValuePair(Constants.DESCRIPTION, isLastPoint ? Constants.DESCRIPTION_ANALIZA : Constants.DESCRIPTION_MERENJE));
 
         if (isLastPoint) {
@@ -1181,7 +1185,13 @@ public class AccelerometerActivity extends AppCompatActivity {
             postParameters.add(new BasicNameValuePair(Constants.NUMBER_OF_GREEN_MARKERS, String.valueOf(numberOfGreenMarkers)));
             postParameters.add(new BasicNameValuePair(Constants.NUMBER_OF_YELLOW_MARKERS, String.valueOf(numberOfYellowMarkers)));
             postParameters.add(new BasicNameValuePair(Constants.NUMBER_OF_RED_MARKERS, String.valueOf(numberOfRedMarkers)));
+
+            location.setLatitude(location.getLatitude() + 0.001);
+            location.setLongitude(location.getLongitude() + 0.001);
         }
+
+        postParameters.add(new BasicNameValuePair(Constants.LONGITUDE, String.valueOf(location.getLongitude())));
+        postParameters.add(new BasicNameValuePair(Constants.LATITUDE, String.valueOf(location.getLatitude())));
 
         Log.d(TAG, "URL " + UrlAddresses.AddPointURL());
         try {

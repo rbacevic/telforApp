@@ -49,7 +49,7 @@ public class KmlUtils {
                                               String xValueForApeak, String yValueForApeak, String zValueForApeak) {
         return "\t<Placemark>\n" +
                 "<styleUrl>#" + pointStyle + "</styleUrl>"+
-                "\t<name>" + "Tacka " + pointIndex + "</name>\n" +
+                "\t<name>" + pointIndex + "</name>\n" +
                 "\t<description>"+ "<![CDATA["+
                 "Brzina [km/h]: " + speedInKmPerHour + "\n"+
                 "Altitude: " + altitude + "\n" +
@@ -80,7 +80,7 @@ public class KmlUtils {
                                                    String averageSpeed, String averageAltitude, double latitude, double longitude) {
         return "\t<Placemark>\n" +
                 "<styleUrl>#" + "averagePlacemark" + "</styleUrl>"+
-                "\t<name>" + "Rezime merenja" + "</name>\n" +
+                "\t<name>" + "Analiza" + "</name>\n" +
                 "\t<description>"+ "<![CDATA["+
                 "Prosecna brzina [km/h]: " + averageSpeed + "\n"+
                 "Prosecna nadmorska visina: " + averageAltitude + "\n" +
