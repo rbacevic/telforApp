@@ -6,7 +6,8 @@ package rs.akcelerometarapp.network;
 public class UrlAddresses {
     public static String BASE_URL;
     public static final String      DEFAULT_URL                      = "http://csl.ftn.kg.ac.rs:8088/VibroMap";
-
+                                                                    // = "http://vibromap-rbacevic.rhcloud.com/VibroMap";
+                                                                    //  = "http://csl.ftn.kg.ac.rs:8088/VibroMap"
     protected static final String   URL_REGISTER                     = "/ServletAndroid";
     protected static final String   URL_LOGIN                        = "/ServletAndroid";
     protected static final String   URL_CREATE_MEASUREMENT           = "/ServletMerenjeAndroid";

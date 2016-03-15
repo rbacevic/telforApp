@@ -6,10 +6,13 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.params.ConnManagerParams;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
+import org.apache.http.util.EntityUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -45,6 +48,17 @@ public class CustomHttpClient {
 
     }
 
+    public static DefaultHttpClient getThreadSafeClient() {
+        DefaultHttpClient client = new DefaultHttpClient();
+        ClientConnectionManager mgr = client.getConnectionManager();
+        HttpParams params = client.getParams();
+
+        client = new DefaultHttpClient(new ThreadSafeClientConnManager(params,
+                mgr.getSchemeRegistry()), params);
+
+        return client;
+    }
+
     /**
      * Performs an HTTP Post request to the specified url with the
      * specified parameters.
@@ -57,38 +71,22 @@ public class CustomHttpClient {
 
     public static String executeHttpPost(String url, ArrayList<NameValuePair> postParameters) throws Exception {
         BufferedReader in = null;
+        HttpResponse response = null;
 
         try {
             HttpClient client = getHttpClient();
             HttpPost request = new HttpPost(url);
             UrlEncodedFormEntity formEntity = new UrlEncodedFormEntity(postParameters);
             request.setEntity(formEntity);
-            HttpResponse response = client.execute(request);
-            in = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+            response = client.execute(request);
 
-            StringBuffer sb = new StringBuffer("");
-            String line = "";
-            String NL = System.getProperty("line.separator");
-            while ((line = in.readLine()) != null) {
-                sb.append(line + NL);
-            }
-            in.close();
-
-            String result = sb.toString();
-            return result;
+            return EntityUtils.toString(response.getEntity());
 
         } finally {
 
-            if (in != null) {
+            if (response != null) {
 
-                try {
-
-                    in.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-
-                }
-
+                response.getEntity().consumeContent();
             }
 
         }

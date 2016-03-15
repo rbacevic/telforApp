@@ -152,6 +152,9 @@ public class AccelerometerActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onBackPressed() { }
+
+    @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
     }
@@ -1178,10 +1181,12 @@ public class AccelerometerActivity extends AppCompatActivity {
 
         Log.d(TAG, "URL " + UrlAddresses.AddPointURL());
         try {
+            Log.d(TAG, "Poslata tacka ..............................");
             return CustomHttpClient.executeHttpPost(UrlAddresses.AddPointURL(), postParameters);
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(this, "Greska prilikom slanja tacke na server", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "Greska nije poslata tacka ..............................");
+            Toast.makeText(AccelerometerActivity.this, "Greska prilikom slanja tacke na server", Toast.LENGTH_SHORT).show();
         }
         return null;
     }
