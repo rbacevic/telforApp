@@ -217,14 +217,6 @@ public class AccelerometerActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        if (mRecording) {
-            menu.findItem(MENU_SAVE).setVisible(true);
-        }
-        return super.onPrepareOptionsMenu(menu);
-    }
-
-    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case MENU_SENSOR_DELAY:
@@ -274,7 +266,6 @@ public class AccelerometerActivity extends AppCompatActivity {
             Toast.makeText(AccelerometerActivity.this, getResources().getString(R.string.acc_sensor_not_found), Toast.LENGTH_SHORT).show();
         }
     }
-
     private LocationRequest locationRequest() {
         return LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
